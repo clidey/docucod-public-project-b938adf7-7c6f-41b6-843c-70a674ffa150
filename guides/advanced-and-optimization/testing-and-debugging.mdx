@@ -3,4 +3,237 @@ title: "Testing & Debugging Deepkit Apps"
 description: "Set up testing workflows, leverage Deepkit’s debug utilities, and integrate with external testing frameworks. Covers strategies for identifying issues and maintaining code quality."
 ---
 
-*This page will automatically be generated from the codebase*
+# Testing & Debugging Deepkit Apps
+
+## Overview
+This guide empowers you to establish effective testing workflows within Deepkit Framework applications, utilize built-in debugging utilities, and seamlessly integrate external testing tools. By following these practices, you will identify bugs quickly, maintain high code quality, and confidently ship reliable applications.
+
+---
+
+## 1. Preparing Your Testing Environment
+
+### Prerequisites
+- Familiarity with Deepkit app structure (modules, services, controllers).
+- Development environment with Node.js and TypeScript configured.
+- Recommended external test runner installed (e.g., Jest).
+
+### Expected Outcome
+- A working test setup executing Deepkit-specific and generic tests with automated assertion and error reporting.
+
+### Time Estimate
+- 15 to 30 minutes to configure and validate your initial test setup.
+
+### Difficulty Level
+- Intermediate
+
+---
+
+## 2. Setting Up Testing Workflows
+
+### 2.1 Organize Your Test Files
+- Place test files alongside your features or in a dedicated `/tests` directory.
+- Use descriptive file names ending with `.spec.ts` or `.test.ts`.
+
+### 2.2 Writing Test Cases for Deepkit Components
+- Leverage Deepkit's built-in utilities (e.g., entity casting, session management).
+- Isolate tests to independently verify behavior of modules, services, and controllers.
+
+### 2.3 Example: Testing a Database Entity Lifecycle
+```typescript
+import { entity, PrimaryKey, AutoIncrement } from '@deepkit/type';
+import { DatabaseFactory } from '@deepkit/orm-integration';
+
+test('persist and query user entity', async () => {
+  @entity.collection('users')
+  class User {
+    id: number & PrimaryKey & AutoIncrement = 0;
+    constructor(public username: string) {}
+  }
+
+  const database = await DatabaseFactory([User]);
+  await database.persist(new User('alice'));
+
+  const user = await database.query(User).filter({ username: 'alice' }).findOne();
+  expect(user).toBeDefined();
+  expect(user?.username).toBe('alice');
+
+  database.disconnect();
+});
+```
+
+### 2.4 Integrate with Jest
+- Configure Jest with support for TypeScript and experimental decorators.
+- Use `setupFilesAfterEnv` to prepare Deepkit-related global hooks if necessary.
+
+### 2.5 Running Tests
+- Run tests via command line: `jest` or npm script: `npm test`.
+- Watch mode for continuous feedback during development: `jest --watch`.
+
+<Check>
+Ensure your test environment matches runtime conditions to prevent type reflection or decorator metadata issues.
+</Check>
+
+---
+
+## 3. Leveraging Deepkit Debug Utilities
+
+### 3.1 Enable Verbose Logging
+- Use Deepkit's logging system to emit detailed runtime information:
+
+```typescript
+import { inject, Logger } from '@deepkit/logger';
+
+class MyService {
+  constructor(@inject(Logger) private logger: Logger) {}
+
+  performTask() {
+    this.logger.info('Task started');
+    // ...
+    this.logger.debug('Intermediate state', someObject);
+  }
+}
+```
+
+### 3.2 Inspect Auto-Generated Types and Metadata
+- Run Deepkit CLI commands to validate runtime types and schema generation.
+
+### 3.3 Add Debuggers and Assertions
+- Combine standard debugging techniques, such as `console.log` or IDE breakpoints, with Deepkit type checks.
+- Assert runtime states explicitly using testing assertions.
+
+<Info>
+Including explicit state checks helps catch issues early before they propagate.
+</Info>
+
+---
+
+## 4. Debugging Common Issues
+
+### 4.1 Handling Failed Dependency Injection
+- Symptom: Service or controller cannot be instantiated.
+- Solution steps:
+  - Verify providers are properly registered in modules.
+  - Confirm scopes and lifecycles match intended use.
+  - Check circular dependencies using Deepkit tools.
+
+### 4.2 Troubleshooting Database Test Failures
+- Symptoms: Persisted entities missing, incorrect queries.
+- Solutions:
+  - Ensure entities are registered with the database instance.
+  - Confirm session management follows transaction rules.
+  - Use sample data sets to isolate failure points.
+
+### 4.3 Resolving Type Reflection Errors
+- Symptoms: Runtime validation errors, missing decorator metadata.
+- Solutions:
+  - Enable `emitDecoratorMetadata` and `experimentalDecorators` in `tsconfig.json`.
+  - Confirm TypeScript compilation aligns with Deepkit runtime usage.
+
+---
+
+## 5. Best Practices for Testing Deepkit Apps
+
+- Keep tests small and focused on a single responsibility.
+- Reset database state between test runs using transactions or cleanup hooks.
+- Use dependency injection to mock or override services during testing.
+- Validate both success and failure scenarios explicitly.
+- Integrate tests into your CI/CD pipeline for continuous quality assurance.
+
+<Tip>
+For complex test setups, consider using the `DatabaseFactory` utility from `orm-integration` to spin up isolated test instances quickly.
+</Tip>
+
+---
+
+## 6. Advanced Debugging Techniques
+
+- Utilize Deepkit’s event system hooks to log lifecycle events during runtime.
+- Inject logging proxies into services without modifying core logic.
+- Profile performance problems by combining Deepkit’s stopwatch tool with your tests.
+
+<AccordionGroup title="Advanced Debugging Techniques">
+<Accordion title="Injecting Loggers for Runtime Insights">
+Inject the `Logger` service and add contextual log statements before and after critical operations to trace state changes.
+</Accordion>
+<Accordion title="Profiling with Stopwatch">
+Use Deepkit Stopwatch to measure execution time of functions inside tests to find bottlenecks.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 7. Example: Full Test Case with Debugging Insights
+
+```typescript
+import { entity, PrimaryKey, AutoIncrement } from '@deepkit/type';
+import { DatabaseFactory } from '@deepkit/orm-integration';
+import { Logger } from '@deepkit/logger';
+
+@entity.collection('products')
+class Product {
+  id: number & PrimaryKey & AutoIncrement = 0;
+  constructor(public name: string, public price: number) {}
+}
+
+test('persist and debug product entity', async () => {
+  const database = await DatabaseFactory([Product]);
+  const logger = new Logger();
+
+  logger.info('Starting product test');
+
+  const product = new Product('Widget', 19.99);
+  await database.persist(product);
+  logger.debug('Persisted product', product);
+
+  const loaded = await database.query(Product).filter({ name: 'Widget' }).findOne();
+  expect(loaded).toBeDefined();
+  expect(loaded?.price).toBe(19.99);
+
+  await database.disconnect();
+  logger.info('Product test completed');
+});
+```
+
+---
+
+## 8. Troubleshooting & Tips
+
+### Common Issues
+
+| Issue                              | Cause                                  | Resolution                                  |
+|----------------------------------|----------------------------------------|---------------------------------------------|
+| Decorators not working            | Missing `emitDecoratorMetadata` on tsconfig.json | Enable `emitDecoratorMetadata` and restart TS server |
+| Test entities not persisted       | Wrong entity registration               | Verify entities passed during database creation |
+| Tests slow or flaky               | Shared state in database                | Use fresh session and transactions for isolation |
+| Dependency injection failures    | Circular dependencies or missing providers | Use Deepkit diagnostics to identify and resolve |
+
+### Tips
+- Use the built-in `hydrateEntity` utility when testing lazy-loaded properties.
+- Take advantage of transaction rollback in tests to maintain a clean state.
+- Add meaningful log messages with data context to speed debugging.
+
+---
+
+## 9. Next Steps & Related Content
+
+- Continue to [Working with Dependency Injection](../core-workflows/dependency-injection-basics.md) to improve test modularity.
+- Explore [Database Integration](../real-time-apis-and-integrations/database-integration.md) for deeper ORM test scenarios.
+- Review [Troubleshooting Common Issues](../../getting-started/troubleshooting-next-steps/common-issues.md) for runtime errors.
+- Learn about [Performance Optimization](../advanced-and-optimization/performance-optimization.md) to identify test bottlenecks.
+
+<Note>
+Integrating your test suite into CI pipelines ensures long-term code quality and stability.
+</Note>
+
+---
+
+## 10. Resources
+
+- [Deepkit Framework GitHub Repository](https://github.com/deepkit/deepkit-framework)
+- [Deepkit API Reference](../../api-reference/)
+- [Deepkit CLI Documentation](../../guides/getting-started/create-new-app.md)
+- [Jest Official Site](https://jestjs.io/) for testing framework details
+
+---
+
+Your journey through testing and debugging Deepkit apps starts here. Implement these recommendations to catch issues early, streamline development, and confidently deliver robust applications.
