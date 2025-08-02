@@ -1,0 +1,353 @@
+---
+title: "Event-Driven & Reactive Systems"
+description: "See how event listeners, workflows, and event dispatching create a responsive, extensible runtime within Deepkit. Discover how to hook into system lifecycles, build reactive flows, and extend core behavior without patching the core."
+---
+
+# Event-Driven & Reactive Systems
+
+Deepkit Framework provides a powerful event-driven architecture and reactive system that enables your application to be highly modular, extensible, and responsive. By leveraging event listeners, workflows, and event dispatching, you can hook into key lifecycle moments, orchestrate complex flows, and extend core behavior dynamically — all without the need to patch or modify the framework’s core.
+
+---
+
+## Introduction to Deepkit's Event System
+
+At the heart of Deepkit's reactive capability lies its in-process Event System. It allows any components running within the same process to communicate through discrete events. These events serve as signals marking important occurrences, such as application startup, HTTP requests, or custom domain-specific notifications.
+
+### Why Use an Event System?
+
+- **Loose Coupling:** Components don't need direct references to each other.
+- **Modular Extensibility:** Add or alter behavior by listening to events independently.
+- **Reactive Logic:** Build workflows that react synchronously or asynchronously to state changes.
+- **Lifecycle Hooks:** Tap into framework or application lifecycle milestones effortlessly.
+
+### Core Concepts
+
+- **Event Tokens:** Unique identifiers for events that also specify event data types and their dispatch nature (sync or async).
+- **Listeners:** Registered callbacks or class methods that respond when an event is dispatched.
+- **Event Dispatching:** The act of triggering an event token, notifying all listeners in order.
+- **Stop Propagation:** Listeners can prevent further execution for performance or control reasons.
+
+### Basic Usage Example
+
+```typescript
+import { App, onAppExecute } from '@deepkit/app';
+
+const app = new App();
+
+app.listen(onAppExecute, async (event) => {
+    console.log('MyEvent triggered!');
+});
+
+app.run();
+```
+
+This example listens for the `onAppExecute` event, fired just before any CLI command execution.
+
+---
+
+## Understanding Event Tokens and Custom Events
+
+### What is an Event Token?
+
+An Event Token uniquely identifies an event and carries the type definition of the event data. It acts both as a trigger and as a key to listen for that event.
+
+```typescript
+import { EventToken } from '@deepkit/event';
+
+const MyEvent = new EventToken('my-event');
+
+app.listen(MyEvent, (event) => {
+    console.log('MyEvent triggered!');
+});
+
+await app.dispatch(MyEvent);
+```
+
+### Custom Event Data
+
+You can create typed event tokens that carry data payloads using `DataEventToken` or extend the base `BaseEvent` class.
+
+```typescript
+import { DataEventToken, BaseEvent, EventToken } from '@deepkit/event';
+
+class UserAddedEvent extends BaseEvent {
+    constructor(public username: string) {
+        super();
+    }
+}
+
+const UserAddedToken = new EventToken<UserAddedEvent>('user.added');
+
+app.listen(UserAddedToken, (event) => {
+    console.log(`User added: ${event.username}`);
+});
+
+await app.dispatch(UserAddedToken, new UserAddedEvent('Alice'));
+```
+
+---
+
+## Types of Event Listeners
+
+Deepkit supports two primary ways to register listeners:
+
+### Functional Listeners
+
+Simple function callbacks that are directly subscribed to an event token.
+
+```typescript
+app.listen(MyEvent, (event) => {
+    console.log('Event received');
+});
+```
+
+They also benefit from **Dependency Injection (DI)**, allowing additional services to be injected automatically into the callback.
+
+```typescript
+app.listen(MyEvent, (event, logger: Logger) => {
+    logger.log('Event received with logger');
+});
+```
+
+### Class-Based Listeners
+
+Create classes with methods decorated to listen to specific events, enhancing organization and reusability.
+
+```typescript
+import { eventDispatcher } from '@deepkit/event';
+
+class MyListener {
+    @eventDispatcher.listen(UserAddedToken)
+    onUserAdded(event: typeof UserAddedToken.event) {
+        console.log('User added:', event.username);
+    }
+}
+
+const app = new App({ listeners: [MyListener] });
+app.run();
+```
+
+DI works with constructor injection or in listener method arguments.
+
+---
+
+## Event Propagation & Control
+
+Events in Deepkit are instances of `BaseEvent`, which provide mechanisms to control propagation:
+
+- **stopImmediatePropagation():** Prevents any further listeners for this event from running.
+- **preventDefault():** Marks the event as default-prevented, useful for certain logic.
+
+Example to halt event processing based on a condition:
+
+```typescript
+dispatcher.listen(MyEvent, (event) => {
+    if (someCondition) {
+        event.stopImmediatePropagation();
+    }
+    // This code will not run if stopped above
+});
+```
+
+This feature is crucial to manage event flow efficiently and avoid unnecessary computations.
+
+---
+
+## Framework-Supplied Events
+
+Deepkit Framework itself exposes various lifecycle and server events you can hook into:
+
+| Event Name                | Description                                                   |
+|---------------------------|---------------------------------------------------------------|
+| onServerBootstrap         | Triggered once during server bootstrap (main & workers).     |
+| onServerBootstrapDone     | When server bootstrap is fully completed.                     |
+| onServerMainBootstrap     | Bootstrap begins in main process only.                        |
+| onServerMainBootstrapDone | Main process server startup done.                             |
+| onServerWorkerBootstrap   | Bootstrap in worker processes.                                |
+| onServerWorkerBootstrapDone | Worker processes have started.                              |
+| onServerShutdownEvent     | Occurs when server shuts down (main and workers).             |
+| onAppExecute              | Before CLI command execution.                                 |
+| onAppExecuted             | After CLI command success.                                    |
+| onAppError                | On CLI command failure.                                       |
+| onAppShutdown             | When app is shutting down.                                    |
+
+Example usage:
+
+```typescript
+new App({ imports: [new FrameworkModule()] })
+    .listen(onAppExecute, (event) => {
+        console.log('Command starting');
+    })
+    .listen(onServerMainBootstrap, (event) => {
+        console.log('Server main process started');
+    })
+    .run();
+```
+
+---
+
+## Building Reactive Workflows with Events
+
+Events can be integrated into workflows to model complex asynchronous operations with defined state transitions.
+
+Deepkit offers a `Workflow` system built on events to create such reactive state machines that handle transitions, retries, and error handling smoothly.
+
+Example (conceptual):
+
+- An HTTP request event triggers routing.
+- Routing event triggers authentication events.
+- Auth success/failure triggers parameter resolving or access denied events.
+- Controller executed triggering response or error events.
+
+Each step dispatches a corresponding event that listeners can handle or override.
+
+This design enables easy extension, filtering, or instrumentation of core application flows.
+
+---
+
+## Practical Guidance & Best Practices
+
+### Registering Listeners
+- Prefer class-based listeners for organization in large apps.
+- Use functional listeners for quick, inline event handling.
+- Leverage DI to inject services or loggers automatically.
+
+### Managing Event Propagation
+- Use `stopImmediatePropagation()` thoughtfully to prevent duplicated logic.
+- Use event objects to carry all necessary context.
+
+### Creating Custom Events
+- Use `DataEventToken` or extend `BaseEvent` for rich event information.
+- Name tokens clearly and uniquely.
+
+### Common Pitfalls
+- Forgetting to await asynchronous dispatch methods.
+- Not handling errors inside listeners, potentially crashing the app.
+- Overusing stop propagation, which might confuse event flows.
+
+### Tips
+- Use event ordering via the `order` parameter to control listener invocation sequence.
+- Implement event watchers during development for debugging dispatched events.
+
+---
+
+## Low-Level Event API
+
+While the `App` abstraction simplifies event handling, you can work directly with the lower-level `EventDispatcher` from `@deepkit/event`:
+
+```typescript
+import { EventDispatcher, EventToken } from '@deepkit/event';
+
+const dispatcher = new EventDispatcher();
+const MyEvent = new EventToken('my-event');
+
+dispatcher.listen(MyEvent, (event) => {
+    console.log('MyEvent triggered!');
+});
+dispatcher.dispatch(MyEvent);
+```
+
+This API is useful for custom event systems or advanced scenarios.
+
+---
+
+## Event System and Dependency Injection Integration
+
+The event system is tightly integrated with Deepkit's dependency injection, enabling seamless injection of services directly into event listeners, both functional and class-based.
+
+Example:
+
+```typescript
+app.listen(MyEvent, (event, logger: Logger) => {
+    logger.log('Received event: ' + event);
+});
+```
+
+For class listeners, inject via constructor or method parameters:
+
+```typescript
+class Listener {
+    constructor(private logger: Logger) {}
+
+    @eventDispatcher.listen(MyEvent)
+    onMyEvent(event: typeof MyEvent.event) {
+        this.logger.log('Handling event');
+    }
+}
+```
+
+---
+
+## Summary
+
+The Deepkit Framework event-driven and reactive system enables developers to create scalable, modular, and reactive applications. By using event tokens, listeners, and the powerful dispatcher, your app can hook into lifecycle moments, dynamically extend behavior, and structure asynchronous workflows robustly. Dependency injection further enriches event handling by providing seamless service access.
+
+Explore related concepts such as [Dependency Injection](../guides/core-workflows/dependency-injection-basics.md), [Module System](../guides/core-workflows/module-system-guide.md), and [HTTP & RPC Controllers](../api-reference/core-controllers/http-controllers.md) to build cohesive Deepkit applications with reactive patterns at their core.
+
+---
+
+## Visual Overview
+
+```mermaid
+flowchart TD
+    subgraph App Lifecycle
+      A[App Start] --> B(onServerBootstrap)
+      B --> C(onServerBootstrapDone)
+      C --> D(onServerMainBootstrap)
+      D --> E(onServerMainBootstrapDone)
+      F[App Shutdown] --> G(onServerShutdownEvent)
+      G --> H(onServerMainShutdown)
+    end
+
+    subgraph Command Lifecycle
+      I[Before Command] --> J(onAppExecute)
+      J --> K(onAppExecuted)
+      J --> L(onAppError)
+      K --> M(onAppShutdown)
+    end
+
+    subgraph Event Dispatching
+      TD[Dispatch EventToken] -->|Listeners Called| Ls[Listeners (Functional/Class)]
+      Ls -->|Stop Propagation?| SP[Stop?]
+      SP -- No --> NextListener[Next Listener]
+      SP -- Yes --> End[End Event Flow]
+    end
+
+    A --> TD
+    M --> TD
+```
+
+Use this flow to understand how Deepkit orchestrates your app through events.
+
+---
+
+## Additional Resources
+
+- [Deepkit App Events](app/events.md) — detailed event API and examples
+- [Framework Module](framework.md) — integration points leveraging the event system
+- [Dependency Injection Guide](guides/core-workflows/dependency-injection-basics.md) — leveraging DI with event listeners
+- [Workflow System Guide](guides/core-workflows/workflow.md) — building complex reactive flows
+
+
+---
+
+For advanced use cases involving distributed event systems, consider the [Deepkit Broker Bus](broker/message-bus.md), which complements the in-process event system by enabling cross-process and service event messaging.
+
+
+---
+
+# Troubleshooting
+
+If you encounter issues with events:
+
+- Ensure `@deepkit/type` and `@deepkit/event` are installed and configured.
+- Enable TypeScript `experimentalDecorators` as class listeners rely on decorators.
+- Validate your event token and listener signatures — the event parameter must be first.
+- Use event watcher utilities included in `@deepkit/event` for debugging dispatched events.
+
+
+---
+
+# Conclusion
+
+Mastering Deepkit's event-driven and reactive systems empowers you to build high-performing, maintainable applications that respond dynamically to business logic and system states. Start by listening to framework lifecycle events and evolve towards custom, application-specific events, combining them with workflows and dependency injection for maximum flexibility.

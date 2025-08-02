@@ -1,0 +1,127 @@
+---
+title: "Deepkit Libraries & Ecosystem"
+description: "Get a quick tour of official and community-driven libraries, including OpenAPI, serverless adapters, REST, Stripe, GraphQL, and more. Understand how these modules extend core functionality for real-world use cases."
+---
+
+# Deepkit Libraries & Ecosystem
+
+Explore the rich ecosystem of official and community-driven libraries that extend the Deepkit Framework. These modules enhance core functionality with specialized features, streamline development workflows, and enable integration with real-world services and platforms.
+
+---
+
+## Overview
+
+Deepkit provides a modular architecture built around a suite of standalone TypeScript libraries, each focused on a distinct concern. You can adopt single libraries as needed or leverage the entire Deepkit Framework for a comprehensive development experience. Beyond the core libraries maintained by Deepkit, a growing community contributes valuable extensions, adapters, and utilities to expand Deepkit’s capabilities.
+
+This page offers a concise tour of these official and community packages, helping you understand how they integrate with Deepkit’s core to solve real-world challenges.
+
+---
+
+## Official Core Deepkit Libraries
+
+The Deepkit Framework is constructed from specialized libraries that work seamlessly together, rooted in a powerful runtime type system. Key core library packages include:
+
+- **@deepkit/type**: Runtime types with validation, serialization, and reflection based on your TypeScript types.
+- **@deepkit/http**: High-performance, type-safe HTTP router for building APIs.
+- **@deepkit/rpc**: Modern, expressive RPC framework with built-in streaming and error forwarding.
+- **@deepkit/orm**: The fastest TypeScript ORM supporting MySQL, PostgreSQL, SQLite, and MongoDB with enterprise design patterns like Data Mapper, Unit of Work, and migrations.
+- **@deepkit/app**: CLI framework and application bootstrap with full dependency injection.
+- **@deepkit/injector**: Runtime DI container with zero boilerplate and support for abstractions.
+- **@deepkit/framework**: Integrates all core libraries providing the application server, debugger, profiler, and API documentation tools.
+
+Each library is designed for performance, type safety, and minimal developer overhead. You can pick exactly what your project needs or use them collectively for building scalable enterprise applications.
+
+---
+
+## Community Packages & Extensions
+
+The Deepkit community actively extends the ecosystem with a variety of packages that add new integrations and features to fit specific use cases:
+
+### Deepkit OpenAPI
+- **Repository:** [hanayashiki/deepkit-openapi](https://github.com/hanayashiki/deepkit-openapi)
+- Automatically generates OpenAPI documentation and Swagger UI from Deepkit HTTP routes, facilitating API exploration and client generation.
+
+### Serverless Adapter
+- **Repository:** [H4ad/serverless-adapter](https://github.com/H4ad/serverless-adapter)
+- Enables running Deepkit applications on serverless platforms such as AWS Lambda, Azure Functions, and DigitalOcean Functions.
+
+### Deepkit REST
+- **Repository:** [deepkit-rest/rest](https://github.com/deepkit-rest/rest)
+- Offers a declarative and feature-rich framework for building REST APIs on top of Deepkit’s runtime types and HTTP router.
+
+### Deepkit Stripe
+- **Repository:** [deepkit-community/modules](https://github.com/deepkit-community/modules/tree/master/packages/stripe)
+- Simplifies interaction with the Stripe API and Stripe webhook consumption using Deepkit applications.
+
+### Deepkit GraphQL & Apollo Server
+- **Repositories:**
+  - [marcus-sa/deepkit-graphql](https://github.com/marcus-sa/deepkit-graphql/tree/main/packages/core)
+  - [marcus-sa/deepkit-graphql Apollo](https://github.com/marcus-sa/deepkit-graphql/tree/main/packages/apollo)
+- Build GraphQL servers powered by Deepkit’s type system, with Apollo integration for robust schema and resolver management.
+
+### Deepkit Remix & Remix Validated Form
+- **Repositories:**
+  - [marcus-sa/deepkit-modules Remix](https://github.com/marcus-sa/deepkit-modules/tree/main/packages/remix)
+  - [marcus-sa/remix-validated-form](https://github.com/marcus-sa/deepkit-modules/tree/main/packages/remix-validated-form)
+- Use Deepkit to build Remix apps server-side and validate forms with Deepkit Type for full type safety.
+
+### Nx Webpack Plugin
+- **Repository:** [marcus-sa/deepkit-modules Nx Webpack](https://github.com/marcus-sa/deepkit-modules/tree/main/packages/nx-webpack-plugin)
+- Integrates Deepkit’s compiler and tooling into Nx Workspace Webpack builds.
+
+---
+
+## How These Libraries Fit Together
+
+Core Deepkit libraries provide foundational features such as type validation, ORM, HTTP routing, RPC, dependency injection, and CLI support. The community packages augment these core features by adding integrations with external ecosystems (like Stripe or Remix), advanced API documentation via OpenAPI, or running Deepkit in serverless environments.
+
+The modular design ensures you can compose exactly the functionality you need without unnecessary dependencies or overhead.
+
+---
+
+## Real-World Use Scenarios
+
+- **Enterprise APIs:** Combine `@deepkit/http` with `@deepkit/orm` and OpenAPI integration for highly performant, type-safe web services with automatic API docs.
+
+- **Microservices:** Use `@deepkit/rpc` alongside the serverless adapter to deploy distributed apps transparently managing transport and serialization.
+
+- **Modern Web Apps:** Build full-stack solutions by sharing models and validation logic with Deepkit Remix server and form validations.
+
+- **Payment Workflows:** Leverage Deepkit Stripe for easy, type-safe interactions with Stripe’s payment APIs inside your app.
+
+- **Rapid Prototyping:** Use Deepkit REST’s declarative API building to quickly iterate without losing type safety or validation rigor.
+
+---
+
+## Best Practices & Tips
+
+- Begin by selecting core libraries aligned with your project goals (e.g., ORM, HTTP, RPC).
+- Explore community packages when you require integrations beyond core Deepkit functionality.
+- Use Deepkit’s runtime types throughout your stack to maximize type safety and reduce bugs.
+- Combine Deepkit’s debugging and profiling tools provided by the `@deepkit/framework` for a smooth developer experience.
+- Keep abreast of the growing community modules for emerging functionality.
+
+---
+
+## Next Steps
+
+- Visit the [Deepkit Documentation Home](https://deepkit.io/documentation/introduction) to dive deeper into core libraries.
+- Explore the community repositories linked above to try examples and integrations.
+- Check out the [Getting Started guides](/getting-started) to build your first Deepkit app.
+- Learn about core concepts and architecture in the [Core Concepts & Terminology](/overview/architecture-core-concepts/core-concepts) page to understand how these libraries interact.
+
+---
+
+## References & Resources
+
+- [Deepkit Framework GitHub](https://github.com/deepkit/deepkit-framework) 
+- [Deepkit Readme with Community Packages](https://github.com/deepkit/deepkit-framework/blob/main/README.md)
+- [Deepkit Libraries Overview and Integration](https://deepkit.io/documentation/overview/integration-and-ecosystem/ecosystem-libraries)
+- Community Repositories linked in this page
+
+
+---
+
+*Whether you're building a simple CLI tool or an enterprise-grade scalable application, Deepkit's libraries and ecosystem empower you to write robust, performant, and maintainable TypeScript code from end to end.*
+
+---

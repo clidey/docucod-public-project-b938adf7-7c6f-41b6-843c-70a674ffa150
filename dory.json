@@ -1,0 +1,256 @@
+{
+  "background": {
+    "decoration": "gradient"
+  },
+  "colors": {
+    "dark": "#1E3A8A",
+    "light": "#60A5FA",
+    "primary": "#60A5FA"
+  },
+  "favicon": "/favicon.svg",
+  "fonts": {
+    "family": "Montserrat",
+    "format": "woff2",
+    "source": "https://fonts.gstatic.com/s/googlesansflex/v5/t5sJIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwGpVd4AZzz0v6lJ4qFXNZhGjLvDSkV4USKMo6qQzwliVdHAy9jxTDHg_ugnAakpwGc-cxgUqDCIUI.woff2"
+  },
+  "icons": {
+    "library": "fontawesome"
+  },
+  "logo": {
+    "dark": "./logo/logo.svg",
+    "light": "./logo/logo.svg"
+  },
+  "name": "Deepkit Framework",
+  "navigation": {
+    "tabs": [
+      {
+        "groups": [
+          {
+            "group": "Introduction \u0026 Value Proposition",
+            "pages": [
+              "overview/introduction-and-value/product-intro",
+              "overview/introduction-and-value/value-prop",
+              "overview/introduction-and-value/audience-use-cases"
+            ]
+          },
+          {
+            "group": "Architecture \u0026 Core Concepts",
+            "pages": [
+              "overview/architecture-core-concepts/architecture-diagram",
+              "overview/architecture-core-concepts/core-concepts",
+              "overview/architecture-core-concepts/feature-overview"
+            ]
+          },
+          {
+            "group": "Integration \u0026 Ecosystem",
+            "pages": [
+              "overview/integration-and-ecosystem/ecosystem-libraries",
+              "overview/integration-and-ecosystem/external-integration"
+            ]
+          }
+        ],
+        "tab": "Overview"
+      },
+      {
+        "groups": [
+          {
+            "group": "Prerequisites \u0026 Installation",
+            "pages": [
+              "getting-started/prerequisites-installation/system-requirements",
+              "getting-started/prerequisites-installation/installing-deepkit-framework"
+            ]
+          },
+          {
+            "group": "First App Setup \u0026 Configuration",
+            "pages": [
+              "getting-started/first-app-setup/creating-your-first-app",
+              "getting-started/first-app-setup/configuration-basics"
+            ]
+          },
+          {
+            "group": "First Run \u0026 Quick Validation",
+            "pages": [
+              "getting-started/running-and-validation/starting-the-app",
+              "getting-started/running-and-validation/quick-validation"
+            ]
+          },
+          {
+            "group": "Troubleshooting \u0026 Next Steps",
+            "pages": [
+              "getting-started/troubleshooting-next-steps/common-issues",
+              "getting-started/troubleshooting-next-steps/learning-resources"
+            ]
+          }
+        ],
+        "tab": "Getting Started"
+      },
+      {
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "guides/getting-started/create-new-app",
+              "guides/getting-started/understanding-structure",
+              "guides/getting-started/quickstart-cli-http-rpc"
+            ]
+          },
+          {
+            "group": "Core Workflows \u0026 Patterns",
+            "pages": [
+              "guides/core-workflows/dependency-injection-basics",
+              "guides/core-workflows/module-system-guide",
+              "guides/core-workflows/data-validation-guide"
+            ]
+          },
+          {
+            "group": "Real-Time APIs \u0026 Integrations",
+            "pages": [
+              "guides/real-time-apis-and-integrations/building-rpc-apis",
+              "guides/real-time-apis-and-integrations/database-integration",
+              "guides/real-time-apis-and-integrations/client-integrations"
+            ]
+          },
+          {
+            "group": "Advanced Techniques \u0026 Performance",
+            "pages": [
+              "guides/advanced-and-optimization/performance-optimization",
+              "guides/advanced-and-optimization/testing-and-debugging"
+            ]
+          }
+        ],
+        "tab": "Guides"
+      },
+      {
+        "groups": [
+          {
+            "group": "Core API Controllers",
+            "pages": [
+              "api-reference/core-controllers/http-controllers",
+              "api-reference/core-controllers/rpc-controllers",
+              "api-reference/core-controllers/cli-controllers"
+            ]
+          },
+          {
+            "group": "Authentication \u0026 Authorization",
+            "pages": [
+              "api-reference/authentication-authorization/api-auth-mechanisms",
+              "api-reference/authentication-authorization/authorization-guards"
+            ]
+          },
+          {
+            "group": "API Usage \u0026 SDK Examples",
+            "pages": [
+              "api-reference/api-usage-examples/http-request-examples",
+              "api-reference/api-usage-examples/rpc-client-examples"
+            ]
+          },
+          {
+            "group": "Error Handling \u0026 Status Codes",
+            "pages": [
+              "api-reference/api-error-handling/http-errors",
+              "api-reference/api-error-handling/rpc-errors"
+            ]
+          }
+        ],
+        "tab": "API Reference"
+      },
+      {
+        "groups": [
+          {
+            "group": "Architecture \u0026 Core Principles",
+            "pages": [
+              "concepts/architecture-overview/system-architecture",
+              "concepts/architecture-overview/modularity-and-dependency-injection",
+              "concepts/architecture-overview/event-driven-and-reactive-systems"
+            ]
+          },
+          {
+            "group": "Data Modeling \u0026 Validation",
+            "pages": [
+              "concepts/data-modeling-and-validation/runtime-types-and-reflection",
+              "concepts/data-modeling-and-validation/data-validation-and-schemas",
+              "concepts/data-modeling-and-validation/serialization-and-transformation"
+            ]
+          },
+          {
+            "group": "Security, Scalability \u0026 Performance",
+            "pages": [
+              "concepts/security-and-performance/security-model-and-permissions",
+              "concepts/security-and-performance/scalability-and-clustering",
+              "concepts/security-and-performance/performance-characteristics"
+            ]
+          },
+          {
+            "group": "Integration \u0026 Interoperability",
+            "pages": [
+              "concepts/integration-and-interoperability/integration-patterns",
+              "concepts/integration-and-interoperability/extending-and-customizing"
+            ]
+          }
+        ],
+        "tab": "Concepts"
+      },
+      {
+        "groups": [
+          {
+            "group": "Deploying to Production",
+            "pages": [
+              "deployment/deploying-to-production/production-deployment-overview",
+              "deployment/deploying-to-production/environment-configuration",
+              "deployment/deploying-to-production/deployment-automation"
+            ]
+          },
+          {
+            "group": "Operational Excellence",
+            "pages": [
+              "deployment/operational-excellence/monitoring-and-logging",
+              "deployment/operational-excellence/scaling-and-high-availability",
+              "deployment/operational-excellence/backup-and-disaster-recovery"
+            ]
+          },
+          {
+            "group": "Security \u0026 Hardening",
+            "pages": [
+              "deployment/security-and-hardening/securing-deepkit-apps",
+              "deployment/security-and-hardening/security-hardening-checklist"
+            ]
+          }
+        ],
+        "tab": "Deployment"
+      },
+      {
+        "groups": [
+          {
+            "group": "Getting Started \u0026 Common Issues",
+            "pages": [
+              "faq/getting-started-faq/install-issues",
+              "faq/getting-started-faq/configuration-faq",
+              "faq/getting-started-faq/runtime-errors"
+            ]
+          },
+          {
+            "group": "Performance, Optimization \u0026 Integrations",
+            "pages": [
+              "faq/performance-integration/performance-tips",
+              "faq/performance-integration/integration-problems",
+              "faq/performance-integration/data-validation-common"
+            ]
+          },
+          {
+            "group": "Community Resources \u0026 Advanced Help",
+            "pages": [
+              "faq/community-support-faq/where-to-get-help",
+              "faq/community-support-faq/contributing-faq",
+              "faq/community-support-faq/learning-examples"
+            ]
+          }
+        ],
+        "tab": "FAQ"
+      }
+    ]
+  },
+  "styling": {
+    "codeblocks": "dark",
+    "eyebrows": "breadcrumbs"
+  }
+}

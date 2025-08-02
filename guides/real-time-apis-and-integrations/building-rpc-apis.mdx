@@ -1,0 +1,354 @@
+---
+title: "Building Real-Time RPC APIs"
+description: "Create and expose real-time Remote Procedure Call (RPC) APIs, leveraging decorators and serialization options. Covers setup, custom logic, and securing your APIs using Deepkit’s RPC infrastructure."
+---
+
+# Building Real-Time RPC APIs
+
+Deepkit RPC empowers you to create and expose real-time Remote Procedure Call (RPC) APIs with ease, leveraging TypeScript decorators, built-in serialization, and streaming capabilities. This guide focuses exclusively on **building RPC APIs** using Deepkit's `@rpc.controller` and `@rpc.action` decorators, tailoring you to efficiently create, customize, and secure your RPC endpoints enabling real-time interactions.
+
+---
+
+## 1. Overview
+
+### What This Guide Covers
+This guide helps you design and implement real-time RPC APIs in Deepkit by:
+
+- Defining controllers with unique paths
+- Creating RPC actions (methods) callable by clients
+- Utilizing streaming support with RxJS Observables and Subjects
+- Applying serialization and validation automatically
+- Implementing basic security practices for RPC actions
+
+### Prerequisites
+
+- Familiarity with TypeScript and decorators
+- `@deepkit/rpc` installed and configured
+- Your environment supports experimentalDecorators
+- Basic understanding of RxJS (optional for streaming features)
+
+### Expected Outcome
+
+By following this guide, you will be able to produce real-time capable RPC APIs with method actions, streaming data support, and proper type serialization that clients can consume simply and efficiently.
+
+### Estimated Time
+15–30 minutes for a first working real-time RPC API
+
+### Difficulty Level
+Intermediate—some experience with TypeScript and server-side development is required
+
+---
+
+## 2. Step-by-Step Instructions
+
+### Step 1: Define an RPC Controller
+
+An RPC controller is a TypeScript class decorated with `@rpc.controller('your-path')`. The path uniquely identifies the controller and is used by clients to address it.
+
+```typescript
+import { rpc } from '@deepkit/rpc';
+
+@rpc.controller('test-rpc')
+export class RpcController {
+  // Actions go here
+}
+```
+
+**Outcome:** You created the RPC Controller class accessible under the path `'test-rpc'`.
+
+---
+
+### Step 2: Add RPC Actions
+
+Inside your controller, define methods decorated with `@rpc.action()`. These methods represent the callable remote procedures. Explicitly specify parameter and return types for automatic serialization and validation.
+
+```typescript
+@rpc.action()
+hello(): string {
+  return 'World';
+}
+
+@rpc.action()
+hi(name: string): string {
+  return `Hi ${name}`;
+}
+```
+
+**Outcome:** Two RPC actions are exposed: `hello` and `hi`. Clients can remotely invoke them.
+
+**Tip:** Only methods with `@rpc.action()` are available remotely.
+
+---
+
+### Step 3: Add Streaming via RxJS Subjects or Observables
+
+For real-time data, return an RxJS `Subject` or `Observable` from an action. Deepkit handles serialization and streams emitted values to clients.
+
+```typescript
+import { Subject, Observable } from 'rxjs';
+
+@rpc.action()
+timesSubject(): Subject<Date> {
+    const subject = new Subject<Date>();
+
+    const interval = setInterval(() => {
+        subject.next(new Date());
+    }, 1000);
+
+    setTimeout(() => {
+        subject.complete();
+    }, 10_000);
+
+    // Clean up interval on subscription end
+    subject.subscribe().add(() => {
+        clearTimeout(interval);
+    });
+
+    return subject;
+}
+
+@rpc.action()
+timesObservable(): Observable<Date> {
+    return new Observable((observer) => {
+        const interval = setInterval(() => {
+            observer.next(new Date());
+        }, 1000);
+
+        setTimeout(() => {
+            observer.complete();
+            clearInterval(interval);
+        }, 10_000);
+
+        return {
+            unsubscribe() {
+                clearInterval(interval);
+            }
+        };
+    });
+}
+```
+
+**Outcome:** Clients can subscribe to these actions and receive a timed stream of Date objects every second.
+
+---
+
+### Step 4: Register and Start the RPC Server
+
+Register your controller with an instance of `RpcKernel`, and attach it to a WebSocket or TCP server transport.
+
+```typescript
+import { rpc, RpcKernel } from '@deepkit/rpc';
+import { RpcWebSocketServer } from '@deepkit/rpc-tcp';
+
+const kernel = new RpcKernel();
+kernel.registerController(RpcController);
+
+const server = new RpcWebSocketServer(kernel, 'localhost:8081');
+server.start({
+  host: '127.0.0.1',
+  port: 8081,
+});
+
+console.log('RPC server running at ws://127.0.0.1:8081');
+```
+
+**Outcome:** Your RPC server is accepting client connections and calls.
+
+---
+
+## 3. Practical Examples
+
+### Example Controller File
+```typescript
+import { rpc } from '@deepkit/rpc';
+import { Observable, Subject } from 'rxjs';
+
+@rpc.controller('test-rpc')
+export class RpcController {
+
+    @rpc.action()
+    hello(): string {
+        return 'World';
+    }
+
+    @rpc.action()
+    hi(name: string): string {
+        return `Hi ${name}`;
+    }
+
+    @rpc.action()
+    timesSubject(): Subject<Date> {
+        const subject = new Subject<Date>();
+
+        const interval = setInterval(() => {
+            subject.next(new Date());
+        }, 1000);
+
+        setTimeout(() => {
+            subject.complete();
+        }, 10_000);
+
+        subject.subscribe().add(() => {
+            clearTimeout(interval);
+        });
+
+        return subject;
+    }
+
+    @rpc.action()
+    timesObservable(): Observable<Date> {
+        return new Observable((observer) => {
+            const interval = setInterval(() => {
+                observer.next(new Date());
+            }, 1000);
+
+            setTimeout(() => {
+                observer.complete();
+                clearTimeout(interval);
+            }, 10_000);
+
+            return {
+                unsubscribe() {
+                    clearTimeout(interval);
+                }
+            };
+        });
+    }
+}
+```
+
+### Starting the Server
+
+```typescript
+import { RpcKernel } from '@deepkit/rpc';
+import { RpcWebSocketServer } from '@deepkit/rpc-tcp';
+
+const kernel = new RpcKernel();
+kernel.registerController(RpcController);
+
+const server = new RpcWebSocketServer(kernel, 'localhost:8081');
+server.start({ host: '127.0.0.1', port: 8081 });
+
+console.log('Server started at ws://127.0.0.1:8081');
+```
+
+### Client Side Example (Optional)
+
+```typescript
+import { RpcWebSocketClient } from '@deepkit/rpc';
+
+async function main() {
+  const client = new RpcWebSocketClient('ws://127.0.0.1:8081');
+  const controller = client.controller<RpcController>('test-rpc');
+
+  const greeting = await controller.hello();
+  console.log(greeting); // Outputs: World
+
+  const nameGreeting = await controller.hi('Alice');
+  console.log(nameGreeting); // Outputs: Hi Alice
+
+  const stream = await controller.timesSubject();
+  const subscription = stream.subscribe(date => {
+      console.log('Current time:', date);
+  });
+
+  setTimeout(() => subscription.unsubscribe(), 5000); // Stop after 5 sec
+}
+
+main().catch(console.error);
+```
+
+---
+
+## 4. Tips, Best Practices & Troubleshooting
+
+### Tips & Best Practices
+
+- **Explicit Types Are Mandatory:** Always declare explicit parameter and return types for actions. This guarantees proper serialization and validation.
+- **Use Streaming for Real-Time Data:** Leverage Observables or Subjects for continuous data push scenarios, e.g., sensor data or live notifications.
+- **Clean Up Resources:** When using Observables or Subjects that internally allocate intervals or resources, ensure clean-up logic is implemented in subscription teardown.
+- **Secure Your Endpoints:** Utilize `strictSerialization` and proper validation to prevent invalid data from reaching your logic.
+- **Dependency Injection:** When using Deepkit Framework, inject dependencies into controllers for accessing services like databases.
+
+### Common Pitfalls
+
+- **Missing Decorators:** Only methods decorated with `@rpc.action()` are exposed remotely.
+- **Implicit Types Fail Serialization:** Avoid inferred types; provide explicit parameter types and return types.
+- **Subscriptions Not Unsubscribed:** Failing to unsubscribe client-side streams leaves server resources open; always unsubscribe when done.
+- **Network Issues:** Ensure server transport (WebSocket or TCP) is correctly configured and listening on the proper host/port.
+
+### Troubleshooting
+
+<AccordionGroup title="Troubleshooting"> 
+<Accordion title="No Remote Methods Found">
+Ensure your controller methods are properly decorated with `@rpc.action()`. Methods without this decorator won't be exposed remotely.
+</Accordion>
+
+<Accordion title="Invalid Parameters Error">
+Check that all RPC action parameters have explicit types. Deepkit uses these to serialize and validate data.
+</Accordion>
+
+<Accordion title="Streaming Does Not Emit Data">
+Verify your Observable or Subject implementations emit values and that subscriptions are active on the client.
+Ensure you clear intervals or timers on unsubscription to prevent resource leaks.
+</Accordion>
+
+<Accordion title="Server Does Not Start or Bind to Port">
+Check your host and port configuration syntax.
+Ensure no other process is binding to the same port.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 5. Next Steps & Related Topics
+
+- **Securing RPC APIs:** Explore configuring `strictSerialization` and validation error logging for production readiness.
+- **Dependency Injection Integration:** Learn how to inject services into your RPC controllers in the Deepkit Framework.
+- **Streaming Deep Dive:** Master RxJS streaming scenarios with BehaviorSubject and complex real-time workflows.
+- **Client Integration:** See how to connect RPC clients in browser or Node.js environments.
+
+Refer to these related guides:
+
+- [Getting Started with Deepkit RPC](../rpc/getting-started.md)
+- [Dependency Injection Guide](../rpc/dependency-injection.md)
+- [RPC Client & Server Examples](../api-usage-examples/rpc-client-examples.md)
+
+---
+
+## 6. Summary
+
+Building real-time RPC APIs with Deepkit is straightforward using controller and action decorators, explicit runtime-typed methods, and native RxJS support for streaming. Properly structured, your APIs will be efficient, typesafe, validated, and easy to consume by clients, enabling powerful real-time data exchange patterns.
+
+---
+
+# Diagram: RPC Streaming Workflow
+
+```mermaid
+flowchart TD
+  Client["Client Subscription"] -->|Subscribe| ServerController[/"RPC Controller"/]
+  ServerController -->|Return| Observable["Observable<Stream>"]
+  Observable -->|Emit Next| ClientStream["Client Receives Data"]
+  ClientStream -->|Unsubscribe| ServerController(?"Unsubscribe Triggers")
+  ServerController -->|Cleanup Resources| Cleanup["Clear timers/intervals"]
+```
+
+---
+
+<Tip>
+Use the built-in `@rpc.action()` decorator exclusively to mark API methods, and always supply explicit parameter and return types for reliable serialization and validation.
+</Tip>
+
+<Note>
+Streaming support in Deepkit RPC is robust—return RxJS Subjects or Observables from your actions to push real-time data effortlessly.
+</Note>
+
+<Warning>
+Disabling strict serialization should be done cautiously and only when you fully understand the security and validation implications.
+</Warning>
+
+<Check>
+Always unsubscribe from observables on the client side to free server-side resources and prevent memory leaks.
+</Check>
+
+---

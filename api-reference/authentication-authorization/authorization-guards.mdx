@@ -1,0 +1,261 @@
+---
+title: "Authorization & Access Control"
+description: "How to restrict and control access to API endpoints using authorization guards and role-based strategies. Provides code samples for protecting resources and extending authorization logic."
+---
+
+# Authorization & Access Control
+
+Deepkit HTTP allows you to **restrict and control access** to your API endpoints precisely and securely. This page focuses on how to leverage **authorization guards** and **role-based strategies** to protect resources. It provides clear, practical examples you can adopt to defend critical routes, while showcasing how to extend and customize authorization logic to fit your application's needs.
+
+---
+
+## Why Authorization Matters
+
+Imagine you are building an API with both public and sensitive data. You want to ensure that only authenticated users with the right privileges can access sensitive endpoints — like administrative actions or user data. Authorization is critical to **secure your API**, prevent unauthorized access, comply with data security policies, and provide a smooth user experience.
+
+Deepkit HTTP empowers you to define these access rules declaratively and programmatically using **middleware, guards, decorators, and strategies aligned with your app architecture**.
+
+---
+
+## Core Concepts
+
+### Authorization Guards
+
+An authorization guard acts as a gatekeeper that runs before your HTTP route handler, deciding if the request should proceed based on the user's credentials, roles, or other business logic.
+
+- Guards can check tokens, user roles, permissions, or any custom logic.
+- Guards integrate seamlessly using middleware or controller decorators.
+- You can use role-based guards to restrict access to roles like 'admin', 'editor', or 'user'.
+
+### Role-Based Access Control (RBAC)
+
+RBAC assigns roles to users and permissions to those roles. In Deepkit:
+
+- You can define roles in your authentication subsystem.
+- Your guards inspect user roles to allow or deny access.
+- Role checks are often composed as reusable guard classes.
+
+---
+
+## Protecting Resources with Authorization Guards
+
+### Example: Creating a Basic Authorization Middleware Guard
+
+This example shows a middleware guard that checks if the request includes a valid `Authorization` header and a user role:
+
+```typescript
+import { HttpMiddleware, HttpRequest, HttpResponse, HttpUnauthorizedError } from '@deepkit/http';
+
+class AuthGuard implements HttpMiddleware {
+  async execute(request: HttpRequest, response: HttpResponse, next: (err?: any) => void) {
+    const authHeader = request.headers['authorization'];
+
+    if (!authHeader) {
+      throw new HttpUnauthorizedError('Missing Authorization header');
+    }
+
+    // Simulate token validation and extracting user roles
+    const user = validateToken(authHeader); // your token validation logic
+
+    if (!user) {
+      throw new HttpUnauthorizedError('Invalid token');
+    }
+
+    // Attach user info to request for later handlers
+    (request as any).user = user;
+
+    next();
+  }
+}
+
+// Dummy token validation function
+function validateToken(token: string) {
+  // Assume 'Bearer valid-token' is a valid token
+  if (token === 'Bearer valid-token') {
+    return { id: 1, roles: ['admin', 'user'] };
+  }
+  return null;
+}
+```
+
+### Applying the Guard Globally or Per Controller
+
+#### Globally
+
+```typescript
+import { App, FrameworkModule } from '@deepkit/framework';
+import { httpMiddleware } from '@deepkit/http';
+
+new App({
+  providers: [AuthGuard],
+  middlewares: [
+    httpMiddleware.for(AuthGuard),
+  ],
+  imports: [new FrameworkModule()]
+}).run();
+```
+
+#### Per Controller
+
+```typescript
+import { http } from '@deepkit/http';
+
+@http.middleware(AuthGuard)
+class ProtectedController {
+  @http.GET('/secure')
+  secureEndpoint() {
+    return { message: 'Access granted' };
+  }
+}
+
+new App({
+  controllers: [ProtectedController],
+  providers: [AuthGuard],
+  imports: [new FrameworkModule()]
+}).run();
+```
+
+### Per Route Middleware
+
+You can also restrict middleware to specific routes:
+
+```typescript
+class ProtectedController {
+  @http.GET('/private').middleware(AuthGuard)
+  privateRoute() {
+    return { secret: 'Top secret data' };
+  }
+}
+```
+
+---
+
+## Role-Based Authorization Example
+
+Define a **RoleGuard** that allows access only if the user has a particular role:
+
+```typescript
+import { HttpMiddleware, HttpRequest, HttpResponse, HttpForbiddenError } from '@deepkit/http';
+
+class RoleGuard implements HttpMiddleware {
+  constructor(private requiredRole: string) {}
+
+  async execute(request: HttpRequest, response: HttpResponse, next: (err?: any) => void) {
+    const user = (request as any).user;
+
+    if (!user || !user.roles.includes(this.requiredRole)) {
+      throw new HttpForbiddenError('Insufficient permissions');
+    }
+
+    next();
+  }
+}
+```
+
+Usage with a controller route:
+
+```typescript
+import { http } from '@deepkit/http';
+
+@http.middleware(new RoleGuard('admin'))
+class AdminController {
+  @http.GET('/admin/dashboard')
+  dashboard() {
+    return { message: 'Welcome Admin' };
+  }
+}
+```
+
+---
+
+## Extending Authorization Logic
+
+Authorization guards can also incorporate more complex business rules:
+
+- Hierarchical roles
+- Ownership checks (e.g., user can only edit their own resources)
+- Time-based restrictions
+- External service checks
+
+This is done by implementing such logic inside your middleware guard’s `execute` method.
+
+---
+
+## Best Practices for Authorization & Access Control
+
+- **Fail fast and clearly**: Return appropriate HTTP status codes (401, 403) with clear messages.
+- **Attach user identity early**: Middleware should augment the request with user info for later use.
+- **Reuse guards**: Compose guards for common roles or checks to avoid duplication.
+- **Declarative route protection**: Use decorators or method chaining to clearly specify access rules.
+- **Combine with Authentication**: Guards are complements to authentication middleware.
+- **Test guards rigorously** to ensure no unauthorized access.
+
+---
+
+## Troubleshooting Common Authorization Issues
+
+<AccordionGroup title="Troubleshooting Authorization Issues">
+<Accordion title="Unauthorized Errors (401)">
+Ensure your authorization header or token is included and correctly formatted. Double-check token validation logic.
+</Accordion>
+<Accordion title="Forbidden Errors (403)">
+Confirm that your user roles contain the required role. Check that the guard middleware is properly attached to routes.
+</Accordion>
+<Accordion title="Middleware Not Executed">
+Verify that middleware is registered correctly globally, per controller, or per route as intended.
+Check order of middleware registration if combining multiple.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Summary
+
+This page showed you how to effectively **restrict and control access** to your Deepkit HTTP API endpoints by using **authorization guards** and **role-based strategies**. You learned the core mechanisms for protecting routes, examples of reusable middleware guards, and how to extend guards with custom logic. Combining these techniques will empower you to build secure, maintainable, and scalable HTTP APIs.
+
+For deeper understanding, you can explore related pages like [Middleware](../middleware.md), [Dependency Injection](../dependency-injection.md), and the [Getting Started](../../getting-started) guides.
+
+---
+
+## Additional Resources
+
+- [Middleware](../middleware.md) — Learn how to create and register middleware in Deepkit HTTP.
+- [Dependency Injection](../dependency-injection.md) — Integrate authorization logic with your services.
+- [Authentication & Authorization in Deepkit](../authentication-authorization/api-auth-mechanisms.md) — Broader overview of authentication methods.
+- [HTTP Controllers & Endpoints](../core-controllers/http-controllers.md) — For controller examples and routing patterns.
+
+---
+
+## Related Code Snippet
+
+```typescript
+// AuthGuard middleware example
+class AuthGuard implements HttpMiddleware {
+    async execute(request: HttpRequest, response: HttpResponse, next: (err?: any) => void) {
+        const authHeader = request.headers['authorization'];
+
+        if (!authHeader) {
+            throw new HttpUnauthorizedError('Missing Authorization header');
+        }
+
+        const user = validateToken(authHeader); // Replace with actual validation
+        if (!user) {
+            throw new HttpUnauthorizedError('Invalid token');
+        }
+
+        (request as any).user = user;
+        next();
+    }
+}
+
+// Applying middleware per controller
+@http.middleware(AuthGuard)
+class MySecureController {
+    @http.GET('/data')
+    getData() {
+        return { data: 'secured' };
+    }
+}
+```
+
+---

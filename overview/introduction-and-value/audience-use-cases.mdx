@@ -1,0 +1,117 @@
+---
+title: "Who Uses Deepkit and For What?"
+description: "Identify Deepkit Framework’s ideal users – from TypeScript engineers seeking full-stack type safety to teams deploying scalable, real-time, data-rich apps. Explore practical scenarios, including SaaS, distributed systems, internal tooling, and cloud-native backends."
+---
+
+# Who Uses Deepkit and For What?
+
+Deepkit Framework is designed for developers and teams who want to harness the full power of TypeScript to build robust, scalable, and high-performance applications. Whether you're a solo engineer focused on end-to-end type safety, or a team deploying complex real-time or distributed systems, Deepkit provides the tools and architecture to accelerate your development and maintain high quality.
+
+## Ideal Users of Deepkit Framework
+
+- **Full-Stack TypeScript Engineers:** Deepkit allows you to write your entire stack in TypeScript with comprehensive runtime types, enabling seamless sharing of data models and validation logic across frontend, backend, API layers, and databases.
+
+- **Teams Building Enterprise-Scale Applications:** Whether you're building SaaS platforms, cloud-native backends, or internal tooling, Deepkit's modular design, dependency injection, and high-performance ORM support enterprise-grade scalability and maintainability.
+
+- **Developers Focusing on Real-Time and Data-Rich Apps:** Deepkit excels for applications that require real-time data sync, streaming RPC calls, or event-driven workflows.
+
+- **Architects Implementing Distributed Systems and Microservices:** With built-in RPC facilities, event systems, and broker integration, Deepkit simplifies inter-service communication and orchestrating complex workflows.
+
+## Practical Scenarios and Use Cases
+
+### SaaS Platforms
+
+Build multi-tenant SaaS applications where sharing types for validation, serialization, and database interaction reduces bugs and accelerates feature development. Deepkit's runtime type system ensures your client and server remain in sync without manual mapping.
+
+### Distributed and Microservices Systems
+
+Leverage Deepkit's fast RPC framework and message broker support to develop microservices that communicate reliably and efficiently. Automatic type-safe serialization and validation reduce integration errors between services.
+
+### Cloud-Native Backends
+
+Deploy scalable HTTP and RPC servers with options for multi-process load balancing, SSL termination, and configuration management. Deepkit's modular system and high-performance ORM streamline cloud backend development.
+
+### Internal Tools and Dashboards
+
+Quickly create internal administrative tools with type-safe CLI commands and web UI components. The framework's event system and DI container enable extensible and maintainable codebases.
+
+## How Deepkit Meets User Needs
+
+- **End-to-End Type Safety:** Share models, validation, and business logic seamlessly across all layers, eliminating manual and error-prone duplication.
+
+- **High Performance:** Fast ORM queries, compiled template rendering, and efficient runtime type handling ensure responsiveness even under heavy load.
+
+- **Modularity and Extensibility:** Build applications with clearly defined modules and inject dependencies easily, enabling testable and maintainable architecture.
+
+- **Real-Time and Streaming Support:** Use RPC with built-in streaming capabilities and RxJS integration to build responsive, reactive systems.
+
+- **Developer Productivity:** With auto-validation, automatic CLI generation, interactive API consoles, and debugger integration, developers can focus on business logic instead of boilerplate.
+
+## Typical Before and After Using Deepkit
+
+| Before Deepkit                                 | After Using Deepkit                                            |
+|------------------------------------------------|----------------------------------------------------------------|
+| Manual synchronization of TypeScript types across frontend and backend                           | Single source of truth for types shared throughout the stack    |
+| Writing repetitive validation code, risking inconsistency                                        | Automatic runtime validation derived from TypeScript types    |
+| Complex custom code for RPC and real-time communication                  | Type-safe, performant RPC system with streaming out-of-the-box   |
+| Managing dependencies and service lifecycles manually                       | Powerful dependency injection container managing lifecycles    |
+| No integrated CLI tooling; separate disparate scripts                         | Modular CLI applications fully integrated with framework services |
+
+## Getting Started Preview
+
+To start exploring Deepkit, consider the following steps:
+
+- **Explore the Quickstart:** Learn how to create your first Deepkit application leveraging the App and Framework modules.
+- **Understand Runtime Types:** See how Deepkit brings TypeScript types to runtime for validation and serialization.
+- **Try Examples:** Use practical samples for HTTP server, CLI commands, and RPC controllers to experience the productivity gains.
+
+<Steps>
+<Step title="Create Your First Deepkit App">
+Follow gentle onboarding to scaffold a new app using npm init and explore the generated project structure.
+</Step>
+<Step title="Share Types End to End">
+Define your data model once in TypeScript and use it seamlessly in frontend, backend, and database.
+</Step>
+<Step title="Build CLI Commands">
+Add typed CLI commands with effortless parameter parsing and dependency injection.
+</Step>
+<Step title="Start HTTP and RPC Servers">
+Define REST or RPC APIs quickly and start real-time capable servers with minimal code.
+</Step>
+<Step title="Explore Debugger and API Console">
+Use integrated tools to inspect your running application, API routes, and performance metrics.
+</Step>
+</Steps>
+
+## Practical Tip
+
+Consider structuring your project so that your core models live in a shared library or package, which can then be imported by your backend, frontend, and CLI command components. This approach maximizes the benefits of Deepkit’s end-to-end type safety.
+
+<Note>
+Deepkit is optimized for TypeScript and Node.js environments. Ensure your project’s TypeScript configuration enables reflection and experimental decorators to fully leverage its features.
+</Note>
+
+## Summary
+
+| Focus              | Why It Matters                                                  |
+|--------------------|----------------------------------------------------------------|
+| Type Safety        | Reduces runtime errors by leveraging your existing TypeScript types at runtime.
+| Scalability       | Modular architecture and performant ORM support large, complex applications.
+| Real-Time Support | RPC and event systems support interactive, multi-client apps.
+| Productivity      | Runtime validation, DI, CLI integration reduces boilerplate.
+
+---
+
+Ready to see Deepkit in action? Begin with creating your first app and defining HTTP or RPC routes to experience a unified, type-safe development workflow.
+
+---
+
+## Related Documentation
+
+- [What is Deepkit Framework?](./product-intro)
+- [Why Choose Deepkit?](./value-prop)
+- [Creating Your First Deepkit App](../../guides/getting-started/create-new-app)
+- [Dependency Injection Basics](../../guides/core-workflows/dependency-injection-basics)
+- [Building Real-Time RPC APIs](../../guides/real-time-apis-and-integrations/building-rpc-apis)
+
+For community support, examples, and advanced use cases, visit the Deepkit [GitHub repository](https://github.com/deepkit/deepkit-framework) and join our Discord community.

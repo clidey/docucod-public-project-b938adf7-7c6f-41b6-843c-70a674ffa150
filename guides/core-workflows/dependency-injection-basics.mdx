@@ -1,0 +1,350 @@
+---
+title: "Working with Dependency Injection"
+description: "Understand and implement Deepkit’s dependency injection system—registering providers, configuring scopes, and leveraging injection for modular and testable code. Includes best practices and troubleshooting."
+---
+
+# Working with Dependency Injection
+
+Deepkit Framework offers an advanced Dependency Injection (DI) system designed to help you build clean, modular, and testable applications. This guide will walk you through registering providers, configuring scopes, and effectively leveraging injection patterns to maximize the modularity and testability of your code.
+
+---
+
+## Workflow Overview
+
+**Task Description:**
+This guide explains how to understand and implement Deepkit’s DI system, focusing on how to register providers, configure different scopes, and inject dependencies for creating modular and maintainable applications.
+
+**Prerequisites:**
+- Deepkit Framework installed and configured
+- Understanding of TypeScript classes and interfaces
+- Basic familiarity with runtime types (from [Runtime Types Guide](../runtime-types.md))
+
+**Expected Outcome:**
+You will be able to:
+- Define and register providers in the DI container
+- Configure provider lifecycles and scopes
+- Inject dependencies via constructors and properties
+- Use DI scopes like `http`, `rpc`, and custom scopes
+- Implement modular applications benefiting from DI container encapsulation
+
+**Time Estimate:** Approximately 20-30 minutes to follow the examples and set up basic DI in your project.
+
+**Difficulty Level:** Intermediate
+
+---
+
+## Step-by-Step Instructions
+
+### 1. Registering Providers
+
+Providers are the services or classes that the DI container manages. You register them with the container so that dependencies can be injected automatically.
+
+- **ClassProvider (Simple):** Register a class by listing it directly.
+
+```typescript
+new App({
+  providers: [UserRepository]
+});
+```
+
+- **ClassProvider (Detailed):** Customize registration with `{ provide, useClass }`.
+
+```typescript
+new App({
+  providers: [{ provide: UserRepository, useClass: UserRepository }]
+});
+```
+
+- **ValueProvider:** Register a specific instance or value.
+
+```typescript
+const dbInstance = new Database();
+
+new App({
+  providers: [{ provide: Database, useValue: dbInstance }]
+});
+```
+
+- **ExistingProvider:** Forward a token to another existing provider.
+
+```typescript
+new App({
+  providers: [
+    { provide: SpecialRepository, useExisting: UserRepository }
+  ]
+});
+```
+
+- **FactoryProvider:** Use a factory function to create a provider with dependencies injected.
+
+```typescript
+new App({
+  providers: [
+    {
+      provide: UserRepository,
+      useFactory: (db: Database) => new UserRepository(db)
+    }
+  ]
+});
+```
+
+**Expected Result:** Providers are registered with their dependencies resolved automatically when injected.
+
+---
+
+### 2. Understanding and Using Scopes
+
+By default, providers are singletons, instantiated once per application lifecycle. Scopes let you create provider instances tied to transient contexts like HTTP requests or RPC calls.
+
+- **Define Scoped Providers:** Assign providers to named scopes.
+
+```typescript
+new App({
+  providers: [
+    { provide: UserSession, scope: 'http' }
+  ]
+});
+```
+
+- **Create Scoped Injector:** For each event (e.g., new HTTP request), create a scoped injector.
+
+```typescript
+const httpScope = injector.createChildScope('http');
+const session = httpScope.get(UserSession); // New instance per request
+```
+
+- **Set Dynamic Scoped Values:** Inject runtime objects, e.g., request/response.
+
+```typescript
+httpServer.on('request', (req, res) => {
+  const httpScope = injector.createChildScope('http');
+  httpScope.set(HttpRequest, req);
+  httpScope.set(HttpResponse, res);
+});
+```
+
+**Expected Result:** Scoped providers create isolated instances per scope, preventing bleed between requests or other scopes.
+
+---
+
+### 3. Injecting Dependencies
+
+Deepkit supports multiple injection patterns:
+
+- **Constructor Injection (Primary):** Declare dependencies in class constructors.
+
+```typescript
+class UserService {
+  constructor(private database: Database) {}
+}
+```
+
+- **Property Injection:** Inject optional or secondary dependencies using the `Inject` type.
+
+```typescript
+import { Inject } from '@deepkit/core';
+
+class LoggingService {
+  protected db!: Inject<Database>;  // required
+  protected cache?: Inject<CacheService>;  // optional
+}
+```
+
+- **Parameter Injection in Callbacks:** You can declare dependencies as parameters in callback functions (HTTP routes, CLI commands).
+
+```typescript
+app.get('/users', (db: Database) => {
+  // handler logic
+});
+```
+
+- **Dynamic Injection via InjectorContext:** Retrieve dependencies manually at runtime.
+
+```typescript
+import { InjectorContext } from '@deepkit/injector';
+
+class CustomService {
+  constructor(protected injector: InjectorContext) {}
+
+  getDatabase() {
+    return this.injector.get(Database);
+  }
+}
+```
+
+**Expected Result:** Dependencies are injected automatically or can be retrieved dynamically, enabling modular and testable code.
+
+---
+
+### 4. Modular Dependency Injection with Modules
+
+Deepkit modules encapsulate providers and their DI sub-containers, offering clean modularization.
+
+- **Define Providers in a Module:**
+
+```typescript
+import { createModuleClass } from '@deepkit/app';
+
+export class MyModule extends createModuleClass({
+  providers: [MyService],
+}) {}
+```
+
+- **Use Exports to Share Providers:** Export providers for importers.
+
+```typescript
+export class MyModule extends createModuleClass({
+  providers: [MyService],
+  exports: [MyService],
+}) {}
+```
+
+- **Import Modules:**
+
+```typescript
+new App({
+  imports: [new MyModule()],
+}).run();
+```
+
+- **Inject Exported Providers:** Inject providers exported by modules if available.
+
+```typescript
+class SomeService {
+  constructor(protected myService: MyService) {}
+}
+```
+
+**Expected Result:** You organize your app’s DI in modular containers supporting encapsulation and shared dependencies.
+
+---
+
+### 5. Best Practices
+
+- Prefer constructor injection for required dependencies, and property injection for optional ones.
+- Use provider scopes to isolate short-lived dependencies (e.g., per request or RPC call).
+- Export only needed providers from modules to maintain encapsulation.
+- Use interfaces and the dependency inversion principle to reduce tight coupling.
+- Register providers explicitly to improve clarity and testability.
+
+---
+
+## Examples & Code Samples
+
+### Simple App With DI
+
+```typescript
+import { App } from '@deepkit/app';
+
+class Database {}
+
+class UserRepository {
+    constructor(protected database: Database) {}
+}
+
+new App({
+    providers: [Database, UserRepository],
+}).run();
+```
+
+### Scoped Provider Example
+
+```typescript
+import { InjectorContext } from '@deepkit/injector';
+
+class UserSession {}
+
+const injector = InjectorContext.forProviders([
+    { provide: UserSession, scope: 'http' }
+]);
+
+const httpScope = injector.createChildScope('http');
+const session1 = httpScope.get(UserSession);
+const session2 = httpScope.get(UserSession);
+console.assert(session1 === session2); // Same instance in scope
+
+const httpScope2 = injector.createChildScope('http');
+const session3 = httpScope2.get(UserSession);
+console.assert(session1 !== session3); // Different instance across scopes
+```
+
+### Injecting Configuration Options
+
+```typescript
+export class AppConfig {
+    port: number = 8080;
+}
+
+class Server {
+    constructor(private config: AppConfig) {
+        console.log('Server port: ', this.config.port);
+    }
+}
+
+new App({
+    providers: [Server],
+    config: AppConfig
+}).run();
+```
+
+### Interface Injection with `provide` Helper
+
+```typescript
+import { provide } from '@deepkit/injector';
+
+interface Logger {
+    log(msg: string): void;
+}
+
+class ConsoleLogger implements Logger {
+    log(msg: string) {
+      console.log(msg);
+    }
+}
+
+new App({
+  providers: [
+    provide<Logger>(ConsoleLogger),
+  ]
+});
+```
+
+---
+
+## Troubleshooting & Tips
+
+### Common Issues
+
+- **Provider Not Found Error:** Ensure all required providers are registered or exported through modules.
+- **Scope Not Available:** Access scoped providers only within the correct scoped injector.
+- **Circular Dependency Errors:** Avoid circular references in providers; refactor with interfaces or factories.
+- **Optional Dependencies:** Mark optional dependencies with `?` or use property injection to avoid missing provider errors.
+
+### Tips
+
+- Use `InjectorContext`'s `createChildScope()` to precisely control lifecycle.
+- Use `configureProvider()` callbacks on modules to apply additional setup to provider instances.
+- Keep modules focused and export only what consumers truly need.
+- Favor interface and abstract class injection for large, complex apps.
+
+---
+
+## Next Steps & Related Content
+
+- Explore [Dependency Injection Providers](./providers.md) to understand available provider types.
+- Learn about [Scopes](./scopes.md) for advanced lifecycle management.
+- Study [Injection](./injection.md) patterns and best practices.
+- Delve into [Modules](../app/modules.md) for scaling your application's DI architecture.
+- Consult the [Getting Started Dependency Injection](./getting-started.md) guide for practical API usage.
+
+---
+
+## Additional Resources
+
+- [Deepkit Framework Core Concepts](../../overview/architecture-core-concepts/core-concepts.md)
+- [Runtime Types Overview](../../runtime-types.md)
+- [Deepkit Dependency Injection GitHub Repository](https://github.com/deepkit/deepkit-framework/tree/main/packages/injector)
+
+---
+
+By following this guide, you will build a solid foundation in utilizing Deepkit’s DI system to create scalable, maintainable, and test-optimized TypeScript applications.

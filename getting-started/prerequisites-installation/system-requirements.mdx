@@ -1,0 +1,215 @@
+---
+title: "System Requirements"
+description: "Outlines the minimum and recommended system specifications for developing and running Deepkit applications. Covers supported operating systems, Node.js version, package manager compatibility, and required tools, helping users verify or set up their environment before installation."
+---
+
+# System Requirements for Deepkit Framework
+
+Before embarking on your journey with Deepkit Framework, it’s essential to ensure your development and runtime environment meets the minimum and recommended system requirements. This guarantees smooth installation, development, and execution of your Deepkit applications.
+
+---
+
+## 1. Supported Operating Systems
+
+Deepkit Framework is designed to run reliably on the following platforms:
+
+- **Windows:** Windows 10 and later versions.
+- **macOS:** macOS 10.13 (High Sierra) or newer.
+- **Linux:** Most modern distributions, including Ubuntu 18.04+, Debian 10+, CentOS 7+, Fedora 30+.
+
+> Ensure your OS is kept up-to-date with the latest security patches and system updates.
+
+---
+
+## 2. Node.js Version Compatibility
+
+Deepkit Framework requires a compatible Node.js runtime to execute:
+
+- **Minimum Supported Version:** Node.js 18.x (LTS)
+- **Recommended Version:** Node.js 20.x (Current LTS)
+
+> Using the latest LTS version ensures access to both performance improvements and security patches. Verify your Node.js version by running:
+
+```bash
+node -v
+# Expected output: v18.x.x or higher
+```
+
+If you don’t have Node.js installed or need to upgrade, download it from the official site: [https://nodejs.org/](https://nodejs.org/).
+
+---
+
+## 3. Supported Package Managers
+
+Deepkit Framework supports all major package managers that work seamlessly with Node.js and TypeScript projects:
+
+- **npm:** Comes bundled with Node.js. Recommended version 9.x or newer.
+- **Yarn:** Version 1.x and above supported.
+- **pnpm:** Supported and compatible.
+
+> Choose the package manager that best fits your workflow. To verify your package manager’s version, run:
+
+```bash
+npm -v
+# or
+
+yarn -v
+# or
+
+pnpm -v
+```
+
+---
+
+## 4. Required Tools and Dependencies
+
+To develop and run Deepkit applications, your environment must have the following tools installed and configured:
+
+- **TypeScript Compiler:** Deepkit relies heavily on TypeScript. Install via npm:
+
+```bash
+npm install -g typescript
+```
+
+- **ts-node:** Enables direct execution of TypeScript files during development.
+
+```bash
+npm install -g ts-node
+```
+
+- **Git:** For version control and managing code repositories.
+
+- **Optional: Docker:** If you plan to containerize your Deepkit applications, ensure Docker is installed and running.
+
+---
+
+## 5. Hardware Recommendations
+
+While Deepkit can run on modest hardware, for effective development and performance, consider the following:
+
+| Aspect              | Minimum                | Recommended            |
+|---------------------|------------------------|-----------------------|
+| **RAM**             | 4 GB                   | 8 GB or more          |
+| **CPU**             | Dual-core (2 cores)    | Quad-core or better   |
+| **Storage**         | 1 GB free disk space    | 5 GB or more (SSD)    |
+
+> These specs ensure efficient compilation, server startup, and responsiveness.
+
+---
+
+## 6. Network and Access Requirements
+
+- For package installation and updates, ensure your system has active internet connectivity with access to npm registries.
+- Firewall and proxy settings should allow outbound connections on ports commonly used by npm (usually TCP 443 and 80).
+
+> When deploying or running Deepkit applications in production, configure your firewalls and network settings according to your environment needs.
+
+---
+
+## 7. Verifying Your Environment
+
+Follow these steps to verify your setup before proceeding:
+
+<Steps>
+<Step title="Verify Node.js Installation">
+Open your terminal or command prompt and run:
+
+```bash
+node -v
+```
+
+Ensure the version is 18.x or higher.
+</Step>
+<Step title="Check TypeScript Installation">
+Run:
+
+```bash
+tsc -v
+```
+
+You should see the TypeScript version, confirming installation.
+</Step>
+<Step title="Test Package Manager Version">
+Depending on your preferred package manager, run:
+
+```bash
+npm -v
+# or
+
+yarn -v
+# or
+
+pnpm -v
+```
+
+Confirm you have the latest or compatible version installed.
+</Step>
+</Steps>
+
+---
+
+## Troubleshooting Common Setup Issues
+
+<AccordionGroup title="Common Problems and Solutions">
+<Accordion title="Node.js Version Too Low">
+
+If `node -v` returns a version lower than 18.x, your Deepkit installation or runtime will fail.
+
+**Solution:**
+- Download and install the latest Node.js LTS from [nodejs.org](https://nodejs.org/).
+- Use Node Version Manager ([nvm](https://github.com/nvm-sh/nvm)) to manage multiple Node.js versions easily.
+
+</Accordion>
+<Accordion title="TypeScript Not Found">
+
+If `tsc -v` returns an error, TypeScript is not installed globally.
+
+**Solution:**
+- Execute `npm install -g typescript` to install.
+- Alternatively, install it locally in your project and run via `npx tsc`.
+
+</Accordion>
+<Accordion title="Package Manager Issues">
+
+Errors when installing dependencies often trace back to outdated or incompatible package managers.
+
+**Solution:**
+- Update npm using `npm install -g npm`.
+- For Yarn, run `npm install -g yarn` or follow Yarn’s official upgrade instructions.
+
+</Accordion>
+<Accordion title="Insufficient Hardware Resources">
+
+Slow build times or server start failures can indicate insufficient RAM or CPU availability.
+
+**Solution:**
+- Close unnecessary applications to free resources.
+- Consider upgrading hardware or using cloud-based development environments.
+
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+Once your system fulfills these requirements, proceed with installing Deepkit Framework by following the [Installing Deepkit Framework](/getting-started/prerequisites-installation/installing-deepkit-framework) guide.
+
+You may also want to review the [Configuration Basics](/getting-started/first-app-setup/configuration-basics) section to prepare your development environment.
+
+---
+
+## Summary Checklist
+
+- Operating System: Windows 10+, macOS 10.13+, Linux modern distro
+- Node.js: v18.x minimum, v20.x recommended
+- Package Manager: npm, Yarn, or pnpm installed and updated
+- TypeScript and ts-node installed
+- Hardware: Minimum 4 GB RAM, dual-core CPU
+- Network: Internet access for package downloads
+
+Prepare your environment with these essentials for a seamless Deepkit development experience.
+
+---
+
+For further details and troubleshooting, visit the [Troubleshooting Common Issues](/getting-started/troubleshooting-next-steps/common-issues) page.

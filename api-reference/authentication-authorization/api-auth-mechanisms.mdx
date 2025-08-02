@@ -1,0 +1,242 @@
+---
+title: "API Authentication Mechanisms"
+description: "A guide to available strategies for authenticating API requests, including tokens, sessions, and custom schemes. Details on how to enable and enforce authentication for different routes or actions."
+---
+
+# API Authentication Mechanisms
+
+Authentication is a foundational aspect of securing your API endpoints, ensuring only authorized clients can access certain resources. Deepkit provides flexible mechanisms to implement authentication using tokens, sessions, and custom schemes that integrate smoothly with your API routes and RPC controllers.
+
+This guide walks you through how to enable, enforce, and customize authentication to protect your API effectively.
+
+---
+
+## Overview of Authentication in Deepkit
+
+Deepkit treats authentication primarily as a process of establishing a `Session` for a client. A session represents the authenticated identity and permission context for each request. 
+
+- Sessions start as anonymous by default.
+- Authentication is triggered by the client sending an authentication token.
+- Authentication tokens can be any value (string, object, etc.) that you define and validate.
+- Once authenticated, sessions are passed to authorization and access control mechanisms in middleware or controller security.
+
+Authentication in Deepkit is tightly integrated with both HTTP and RPC interfaces, supporting flexible patterns depending on your project needs.
+
+---
+
+## Authentication Mechanisms Available
+
+### 1. Token-Based Authentication
+
+Token-based authentication is the simplest and most common approach:
+
+- The client sends a token as part of its request (e.g., HTTP header, query parameter, or via RPC client token).
+- The server validates this token and maps it to a session representing the authenticated user.
+
+In Deepkit RPC, tokens are commonly set on clients with:
+
+```typescript
+const client = new RpcWebSocketClient('localhost:8081');
+client.token.set('your-auth-token');
+```
+
+And then validated and turned into a session in your custom security class (see below).
+
+---
+
+### 2. Custom Security Class Override
+
+To control authentication and authorization precisely in your RPC API, override the built-in `RpcKernelSecurity` class.
+
+This class exposes key methods:
+
+- `authenticate(token: any): Promise<Session>` — accepts a token and either returns a valid `Session` object or throws an error if authentication fails.
+- `hasControllerAccess(session: Session, controllerAccess: RpcControllerAccess): Promise<boolean>` — determines if the session has permission for the requested method.
+
+#### Example: Custom Authentication and Authorization
+
+```typescript
+import { RpcKernelSecurity, Session, RpcControllerAccess } from '@deepkit/type';
+
+// Extend the Session class to include user attributes
+class UserSession extends Session {
+    constructor(public username: string, public token: string) {
+        super();
+    }
+}
+
+class MyKernelSecurity extends RpcKernelSecurity {
+    // Validate token and return a user session
+    async authenticate(token: any): Promise<Session> {
+        if (token === '123456789') {
+            return new UserSession('admin', token);
+        }
+        throw new Error('Authentication failed');
+    }
+
+    // Check if the session has access to the controller's action
+    async hasControllerAccess(session: Session, controllerAccess: RpcControllerAccess): Promise<boolean> {
+        if (controllerAccess.actionGroups.includes('admin-only')) {
+            return session instanceof UserSession && session.username === 'admin';
+        }
+        return true; // allow default access
+    }
+}
+```
+
+Pass your custom security class to your `RpcKernel` or Deepkit app providers:
+
+```typescript
+const kernel = new RpcKernel([{ provide: RpcKernelSecurity, useClass: MyKernelSecurity, scope: 'rpc' }]);
+```
+
+Or, within Deepkit Framework app:
+
+```typescript
+new App({
+    controllers: [MyController],
+    providers: [
+        { provide: RpcKernelSecurity, useClass: MyKernelSecurity, scope: 'rpc' }
+    ],
+    imports: [new FrameworkModule]
+}).run();
+```
+
+---
+
+### 3. HTTP Authentication Support
+
+For HTTP APIs, authentication can be implemented through middleware intercepting request headers, cookies, or other schemes.
+
+You can listen to HTTP auth events or create middlewares that check authorization headers:
+
+```typescript
+import { HttpMiddleware, HttpRequest, HttpResponse, HttpUnauthorizedError } from '@deepkit/http';
+
+class AuthMiddleware implements HttpMiddleware {
+    async execute(request: HttpRequest, response: HttpResponse, next: (err?: any) => void) {
+        const token = request.headers['authorization'];
+        if (!token || token !== 'expected-token') {
+            throw new HttpUnauthorizedError();
+        }
+        next();
+    }
+}
+```
+
+Then attach this middleware globally or per route to enforce authentication.
+
+---
+
+## Session Lifecycle and Usage
+
+- Clients start with anonymous sessions.
+- When a token is set on clients (either HTTP or RPC), authentication is triggered on the next call.
+- Authenticated sessions can carry user identity and permissions.
+- Sessions flow to authorization methods for fine-grained access control.
+
+The session object is your key to propagate security context throughout your API.
+
+---
+
+## Authorization & Access Control Integration
+
+Authentication determines identity, but authorizing what that identity can do is equally crucial.
+
+In RPC, `hasControllerAccess` interacts with session and controller metadata (name, action groups, additional data) to allow or deny calls.
+
+Use the `RpcControllerAccess` interface to inspect details about the invoked action:
+
+```typescript
+interface RpcControllerAccess {
+    controllerName: string;
+    controllerClassType: Function;
+    actionName: string;
+    actionGroups: string[];
+    actionData: { [name: string]: any };
+}
+```
+
+This enables scenarios like role checks, restricted groups, or data-driven authorization.
+
+```typescript
+if (controllerAccess.actionGroups.includes('admin')) {
+    return session.isAdmin === true;
+}
+```
+
+---
+
+## Best Practices for API Authentication
+
+- **Use Strong, Unique Tokens**: Avoid hardcoded tokens in production; integrate with OAuth, JWT, or other secure token systems.
+- **Customize Session Types**: Extend `Session` to carry user info and claims.
+- **Validate Tokens Thoroughly**: Implement your own `authenticate` method rigorously.
+- **Enforce Access Controls**: Use `hasControllerAccess` to prevent unauthorized method calls.
+- **Consider Refresh Mechanisms**: Though outside built-in capabilities, implement token expiry and renewal.
+- **Secure Transport**: Use encrypted channels (TLS) for token transmission.
+
+---
+
+## Troubleshooting Authentication
+
+- **Unexpected Anonymous Sessions**: Ensure client sets the token before making requests.
+- **Authentication Errors**: Inspect thrown errors in `authenticate` and ensure tokens match expected values.
+- **Access Denied Errors**: Confirm `hasControllerAccess` returns true for authorized sessions.
+- **Missing Dependencies**: Verify that your custom security provider is registered correctly.
+- **Scope Issues**: Use `scope: 'rpc'` when providing `RpcKernelSecurity` to align lifetimes.
+
+---
+
+## Summary
+
+Authentication mechanisms in Deepkit are flexible and extensible, built around session management and custom security classes. Whether you are building RPC APIs or HTTP endpoints, you can implement secure token-based schemes, validate identities, and enforce permissions at the controller or action level.
+
+By leveraging Deepkit's integration points, you empower your API with robust and maintainable authentication flows.
+
+---
+
+## See Also
+
+- [RPC Security and Authentication](rpc/security.md): Detailed guide on RPC security customization.
+- [HTTP Middleware](http/middleware.md): Implement custom middlewares, including for HTTP auth.
+- [RPC Getting Started](rpc/getting-started.md): Learn how RPC controllers and clients work.
+- [Dependency Injection](../guides/core-workflows/dependency-injection-basics.md): How to register providers such as your security handler.
+
+---
+
+## Example: Simple RPC Authentication Setup
+
+```typescript
+import { rpc, RpcKernel, RpcKernelSecurity, Session, RpcControllerAccess } from '@deepkit/rpc';
+
+class UserSession extends Session {
+    constructor(public username: string) {
+        super();
+    }
+}
+
+class MyKernelSecurity extends RpcKernelSecurity {
+    async authenticate(token: any): Promise<Session> {
+        if (token === 'secret-token') return new UserSession('user123');
+        throw new Error('Invalid token');
+    }
+
+    async hasControllerAccess(session: Session, access: RpcControllerAccess): Promise<boolean> {
+        return session instanceof UserSession; // Only authenticated users
+    }
+}
+
+const kernel = new RpcKernel([{ provide: RpcKernelSecurity, useClass: MyKernelSecurity, scope: 'rpc' }]);
+
+// later, create a client and set token
+const client = new RpcWebSocketClient('localhost:8081');
+client.token.set('secret-token');
+const controller = client.controller<MyController>('/main');
+```
+
+This example shows how to enforce token validation and enable access only to authenticated sessions.
+
+---
+
+

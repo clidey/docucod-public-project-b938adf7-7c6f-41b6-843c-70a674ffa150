@@ -1,0 +1,320 @@
+---
+title: "Integrating with Databases"
+description: "How to connect Deepkit to databases, define models, and perform database operations. This guide introduces the ORM and data layer, illustrating examples for common storage and retrieval tasks."
+---
+
+# Integrating with Databases
+
+Deepkit Framework enables seamless integration with databases through its powerful ORM and data layer. This guide walks you through how to connect Deepkit to databases, define models, and perform common database operations. You will learn how to set up database classes, configure connections, manage multiple databases, and work efficiently with Deepkit's ORM Browser and migration system.
+
+---
+
+## Workflow Overview
+
+### Task Description
+Learn how to connect Deepkit Framework applications to various databases using Deepkit ORM, define entities, perform querying and data manipulation, and manage database migrations.
+
+### Prerequisites
+- Basic familiarity with TypeScript and Deepkit Framework.
+- Deepkit Framework installed and a project created.
+- Database adapter package installed (e.g., `@deepkit/sqlite`, `@deepkit/postgres`).
+- Entities defined as classes or interfaces using Deepkit's runtime types.
+
+### Expected Outcome
+- A working database connection integrated into your Deepkit app.
+- Ability to query, insert, update, and delete data via the ORM.
+- Configured migrations for schema changes.
+- Access to Deepkit ORM Browser to manage data interactively.
+
+### Time Estimate
+Approximately 20-40 minutes depending on complexity.
+
+### Difficulty Level
+Intermediate (some prior Deepkit and database knowledge recommended).
+
+---
+
+## Step-by-Step Instructions
+
+### 1. Define Your Entity Models
+Start by defining your data models as TypeScript classes or interfaces annotated with Deepkit runtime types and decorators.
+
+Example:
+```typescript
+import { entity, PrimaryKey, AutoIncrement } from '@deepkit/type';
+
+@entity.name('user')
+export class User {
+  id: number & PrimaryKey & AutoIncrement = 0;
+  created: Date = new Date;
+  constructor(
+    public username: string,
+    public email: string
+  ) {}
+}
+```
+
+You can also use interfaces if preferred.
+
+---
+
+### 2. Create a Database Class
+Create a class extending Deepkit ORM's `Database` and configure it with a database adapter and your entity models.
+
+Example for SQLite:
+```typescript
+import { Database } from '@deepkit/orm';
+import { SQLiteDatabaseAdapter } from '@deepkit/sqlite';
+import { User } from './models';
+
+export class SQLiteDatabase extends Database {
+  constructor() {
+    super(
+      new SQLiteDatabaseAdapter('/tmp/myapp.sqlite'),
+      [User] // Add all entity models here
+    );
+  }
+}
+```
+
+This class will manage connection and CRUD operations.
+
+---
+
+### 3. Register the Database in Your Application
+Register your database class as a provider in your app and enable helpful options like migration on startup and debugging.
+
+```typescript
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+import { SQLiteDatabase } from './database';
+
+new App({
+  providers: [SQLiteDatabase],
+  imports: [
+    new FrameworkModule({
+      migrateOnStartup: true,   // Automatically create tables at app start
+      debug: true,             // Enable ORM debug browser
+    })
+  ]
+}).run();
+```
+
+---
+
+### 4. Access Database in Controllers or Services
+Use Dependency Injection to access your database instance anywhere in your app.
+
+Example in a controller:
+
+```typescript
+import { SQLiteDatabase } from './database';
+import { http } from '@deepkit/http';
+
+export class UserController {
+  constructor(protected database: SQLiteDatabase) {}
+
+  @http.GET()
+  async listUsers() {
+    return await this.database.query(User).find();
+  }
+}
+```
+
+This provides typesafe querying and returns fully hydrated entities.
+
+---
+
+### 5. Configure Connection Credentials Dynamically
+For flexible environments (testing, production), use a config class and inject parameters when constructing the database.
+
+Example:
+
+```typescript
+// database.ts
+import { Database } from '@deepkit/orm';
+import { PostgresDatabaseAdapter } from '@deepkit/postgres';
+import { User } from './models';
+
+type DbConfig = {
+  databaseHost: string;
+  databaseUser: string;
+  databasePassword: string;
+};
+
+export class MainDatabase extends Database {
+  constructor(config: DbConfig) {
+    super(new PostgresDatabaseAdapter({
+      host: config.databaseHost,
+      user: config.databaseUser,
+      password: config.databasePassword,
+    }), [User]);
+  }
+}
+```
+
+```typescript
+// config.ts
+export class AppConfig {
+  databaseHost: string = 'localhost';
+  databaseUser: string = 'postgres';
+  databasePassword: string = '';
+}
+```
+
+```typescript
+// app.ts
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+import { MainDatabase } from './database';
+import { AppConfig } from './config';
+
+const app = new App({
+  config: AppConfig,
+  providers: [MainDatabase],
+  imports: [
+    new FrameworkModule({
+      migrateOnStartup: true,
+      debug: true,
+    })
+  ]
+});
+
+app.loadConfigFromEnv({
+  prefix: 'APP_',
+  namingStrategy: 'upper',
+  envFilePath: ['local.env', 'prod.env']
+});
+
+app.run();
+```
+
+Use environment variables such as:
+
+```sh
+APP_DATABASE_HOST=localhost APP_DATABASE_USER=postgres ts-node app.ts server:start
+```
+
+Or define them inside your `.env` files.
+
+---
+
+### 6. Manage Multiple Databases
+You can define as many database classes as required, each with distinct names. Just ensure no name conflicts in ORM browser or DI.
+
+Create separate providers for each and register them accordingly.
+
+---
+
+### 7. Use Deepkit ORM Browser for Interactive Data Management
+Start your Deepkit app with debugging enabled and access the ORM Browser at:
+
+```
+http://localhost:8080/_debug/database/default
+```
+
+This browser lets you:
+- View your entities visually as ER diagrams.
+- Run JavaScript queries interactively.
+- Add, edit, delete records.
+
+Example of adding a user:
+- Click the entity on the sidebar (e.g., User)
+- Click the `+` icon
+- Enter values for required fields
+- Click `Confirm` to persist changes
+
+---
+
+### 8. Perform Database Migrations
+Deepkit provides built-in migration commands to keep your schema in sync with your model definitions.
+
+Basic Migration Commands via CLI:
+
+```sh
+# Create a migration file based on schema changes
+ ts-node app.ts migration:create --migrationDir src/migrations
+
+# Show pending migrations
+ ts-node app.ts migration:pending --migrationDir src/migrations
+
+# Apply pending migrations
+ ts-node app.ts migration:up --migrationDir src/migrations
+
+# Revert last migration
+ ts-node app.ts migration:down --migrationDir src/migrations
+
+# Fake a migration, mark as executed without running
+ ts-node app.ts migration:up --migrationDir src/migrations --fake
+```
+
+Migrations generate `up` and `down` methods you can customize and commit to your repository to share with your team.
+
+---
+
+## Troubleshooting & Tips
+
+- **Migration on Startup Caveat**: Use `migrateOnStartup` only for prototyping. In production, rely on managed migrations to avoid unintended schema drops or data loss.
+
+- **Database Credentials**: Always use environment variables or config files to manage credentials securely.
+
+- **ORM Browser Access**: If the ORM browser doesn't load, ensure `debug: true` is set in FrameworkModule and the server is running.
+
+- **Multiple Database Conflicts**: Use unique class names and register each database explicitly to avoid conflict in the ORM Browser.
+
+- **Testing with In-Memory Databases**: Use SQLite's `:memory:` adapter to create ephemeral test databases.
+
+- **Entity Changes**: After changing entities, generate migrations before running your app to keep schema consistent.
+
+---
+
+## Examples & Code Samples
+
+### Basic SQLite Database Class
+```typescript
+import { Database } from '@deepkit/orm';
+import { SQLiteDatabaseAdapter } from '@deepkit/sqlite';
+import { User } from './models';
+
+export class SQLiteDatabase extends Database {
+  constructor() {
+    super(new SQLiteDatabaseAdapter('/tmp/myapp.sqlite'), [User]);
+  }
+}
+```
+
+### Accessing Database in Controller
+```typescript
+import { http } from '@deepkit/http';
+import { SQLiteDatabase } from './database';
+import { User } from './models';
+
+export class UserController {
+  constructor(protected database: SQLiteDatabase) {}
+
+  @http.GET()
+  async list() {
+    return await this.database.query(User).find();
+  }
+}
+```
+
+### Migration Command
+```bash
+# Create migration after entity changes
+ ts-node app.ts migration:create --migrationDir src/migrations
+```
+
+---
+
+## Next Steps & Related Content
+
+- **Deepkit ORM**: Deepen your knowledge about the ORM APIs, relations, query building, and entity definitions in the [Deepkit ORM chapter](../orm.md).
+- **Migrations**: Learn advanced migration usage and best practices in [Migrations guide](../orm/migrations.md).
+- **Dependency Injection**: Understand how to inject and manage database providers within Deepkit modules in [Dependency Injection guide](../guides/core-workflows/dependency-injection-basics.md).
+- **Configuration Basics**: Manage app-wide configuration and environment variables in [Configuration Basics](../../getting-started/first-app-setup/configuration-basics.md).
+- **ORM Browser**: Explore interactive data management and query capabilities in [Deepkit ORM Browser](../../library/orm-browser.md).
+
+---
+
+By following this guide, you will have a robust, flexible, and type-safe database integration within your Deepkit Framework application, empowering you to build performant data-driven applications.

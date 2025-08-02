@@ -1,0 +1,280 @@
+---
+title: "Configuration and First Steps"
+description: "Guidance for configuring your first Deepkit app, understanding configuration options, environment variables, and initial project structure. Addresses what to do if the app does not start as expected."
+---
+
+# Configuration and First Steps
+
+Configure your first Deepkit app with confidence by understanding key configuration options, environment variables, and the initial project structure. This guide will help you set up, customize, and troubleshoot your app configuration to get started quickly and effectively.
+
+---
+
+## 1. Understanding Configuration in Deepkit
+
+Deepkit applications use strongly typed configuration classes to centralize all runtime settings for your app. This approach ensures that configuration values are validated and easily injectable across your modules and services.
+
+### Why Use Configuration Classes?
+- Enforce type safety and validation for configuration properties
+- Provide clear defaults and documentation for each config option
+- Enable environment-variable overrides for flexible deployment
+- Integrate seamlessly with Deepkit's Dependency Injection system
+
+### Typical Configuration Workflow
+
+1. **Define a `config.ts` file** with a configuration class decorated for Deepkit
+2. Override default values with environment variables or CLI arguments
+3. Inject the configuration class into your services or controllers
+4. Use configuration values at runtime to control app behavior
+
+<Tip>
+Strongly typing your configuration prevents invalid values early and reduces runtime errors, making your app more reliable.
+</Tip>
+
+---
+
+## 2. Creating Your Configuration Class
+
+A configuration class declares the settings your app requires, including type annotations and default values.
+
+```typescript
+import { config } from '@deepkit/app';
+
+@config
+export class AppConfig {
+  @config.default('localhost')
+  host!: string;
+
+  @config.default(3000)
+  port!: number;
+
+  @config.description('Enable verbose logging')
+  debug?: boolean;
+}
+```
+
+### Key Points:
+- Use `@config` decorator to mark the class
+- Use `@config.default` to provide default values
+- Add descriptions to clarify each option
+- Typescript types ensure validation and autocompletion
+
+---
+
+## 3. Overriding Configuration with Environment Variables
+
+Deepkit supports environment variable overrides using the following conventions:
+
+- Environment variables are uppercase and use underscores (e.g., `APP_PORT`)
+- You can override nested configuration using dot notation, replaced by underscores (e.g., `APP_DATABASE_HOST`)
+- Optionally, JSON env variables can be used for complex config objects
+
+### Example
+Given this config class:
+
+```typescript
+@config
+export class DatabaseConfig {
+  @config.default('localhost')
+  host!: string;
+
+  @config.default(5432)
+  port!: number;
+
+  @config.default('mydb')
+  name!: string;
+}
+```
+
+Set environment variables like:
+
+```bash
+DATABASE_HOST=prod-db-server
+DATABASE_PORT=6432
+```
+
+to override defaults.
+
+<Note>
+Ensure environment variable names exactly match the pattern expected by your configuration schema to avoid unexpected defaults.
+</Note>
+
+---
+
+## 4. Injecting Configuration into Your Application
+
+Once your configuration class is defined, instantiate and inject it using Deepkit's Dependency Injection system.
+
+### Example Usage in Service:
+
+```typescript
+import { Injectable } from '@deepkit/app';
+
+@Injectable()
+export class MyService {
+  constructor(protected config: AppConfig) {
+    console.log('Running on port', config.port);
+  }
+}
+```
+
+### Using Configuration in Modules
+
+Register your configuration class in your module to enable DI:
+
+```typescript
+import { Module } from '@deepkit/app';
+
+@Module({
+  providers: [AppConfig, MyService],
+})
+export class AppModule {}
+```
+
+<Tip>
+Using DI for your configuration reduces boilerplate and makes your services easier to test and maintain.
+</Tip>
+
+---
+
+## 5. Common Configuration Options to Set Initially
+
+Most new Deepkit apps start by configuring:
+
+- **Port** and **Host** to control where the HTTP or RPC server listens
+- **Debug** or **Log level** flags for verbosity
+- **Database connection strings** or credentials via nested config
+- Third-party service URLs or API keys
+
+Consult your app’s specific documentation or defaults as the base.
+
+---
+
+## 6. Troubleshooting Configuration Issues
+
+### My App Does Not Start or Crashes on Startup
+
+- Confirm that your config class is properly decorated with `@config`.
+- Verify you provided valid environment variables (correct names and types).
+- Check the DI container correctly registers your config class.
+- Look at console logs for validation errors.
+
+### Changes in Environment Variables Are Not Reflected
+
+- Restart your app to reload environment variables.
+- Ensure no conflicting defaults override your env settings.
+
+### Injection Errors for Configuration Class
+
+- Confirm configuration class is included in module providers.
+- Check for circular dependencies between config and other services.
+
+<Tip>
+Leverage Deepkit’s built-in verbose logging and error messages to quickly isolate configuration resolution problems.
+</Tip>
+
+---
+
+## 7. Example: Bringing It All Together
+
+1. Define a configuration class:
+
+```typescript
+@config
+export class AppConfig {
+  @config.default(8080)
+  port!: number;
+
+  @config.default('info')
+  logLevel!: string;
+
+  @config.description('Database URL')
+  dbUrl!: string;
+}
+```
+
+2. Set environment variables before starting your app:
+
+```bash
+PORT=8090
+LOGLEVEL=debug
+DBURL=postgres://user:pass@localhost/db
+```
+
+3. Register and inject config in your app module: 
+
+```typescript
+@Module({
+  providers: [AppConfig, SomeService]
+})
+export class AppModule {}
+
+@Injectable()
+class SomeService {
+  constructor(private config: AppConfig) {
+    console.log('App port:', config.port);
+  }
+}
+```
+
+4. Run the app. Your service will receive config values from the environment or defaults.
+
+---
+
+## 8. Next Steps & Resources
+
+- Explore the [Configuration Basics Guide](https://docs.deepkit.com/getting-started/first-app-setup/configuration-basics) for detailed examples
+- Review [Dependency Injection Basics](https://docs.deepkit.com/guides/core-workflows/dependency-injection-basics) to understand how config integrates with services
+- Visit the [Creating Your First Deepkit App](https://docs.deepkit.com/guides/getting-started/create-new-app) guide for step-by-step app setup
+- Refer to Troubleshooting Common Issues for solving startup and injection errors
+
+<Tip>
+Regularly update your configuration and environment variable documentation as your app evolves to avoid confusion and bugs.
+</Tip>
+
+---
+
+## 9. Frequently Asked Questions
+
+<AccordionGroup title="Configuration FAQs">
+<Accordion title="How do I change configuration values without modifying code?">
+Use environment variables or CLI flags to override config defaults without code changes. For example, set `PORT=8081` in your environment.
+</Accordion>
+
+<Accordion title="What happens if an environment variable is not valid?">
+Deepkit validates your config types on app startup. If an env var has invalid type or format, the app throws an error and won’t start until fixed.
+</Accordion>
+
+<Accordion title="Can I inject configuration into different modules?">
+Yes, define configuration classes inside the modules needing them and register them properly. Use imports/exports for shared config.
+</Accordion>
+
+<Accordion title="How to debug configuration injection errors?">
+Check your module provider registration, ensure no circular DI dependencies, and enable verbose logging to trace injection steps.
+</Accordion>
+
+<Accordion title="What if my app ignores environment variable changes?">
+Remember to restart the app after changing env vars. Also verify variable names exactly match the config property mapping.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 10. Summary
+
+Proper configuration setup is fundamental for launching your Deepkit application successfully. Define clear, validated configuration classes, leverage environment variable overrides, and use dependency injection to access settings seamlessly across your app. Start with essential options like ports and logging, and develop a workflow for managing your app’s runtime behavior effectively.
+
+
+---
+
+#### Related Documentation
+- [Creating Your First Deepkit App](https://docs.deepkit.com/guides/getting-started/create-new-app)
+- [Dependency Injection Basics](https://docs.deepkit.com/guides/core-workflows/dependency-injection-basics)
+- [Troubleshooting Common Issues](https://docs.deepkit.com/getting-started/troubleshooting-next-steps/common-issues)
+- [System Requirements](https://docs.deepkit.com/getting-started/prerequisites-installation/system-requirements)
+
+#### External Resource
+- Official Deepkit Discord: [https://discord.gg/PtfVf7B8UU](https://discord.gg/PtfVf7B8UU)
+
+---
+
+Configure smartly, test early, and build confidently with Deepkit Framework!

@@ -1,0 +1,258 @@
+---
+title: "Securing Deepkit Applications"
+description: "A practical guide to locking down exposed services and endpoints, managing application secrets, enforcing HTTPS, and restricting insecure access patterns. Includes suggestions for integrating with external secret managers and enforcing security best practices in production."
+---
+
+# Securing Deepkit Applications
+
+Seamless security is the backbone of any production-ready application. This guide walks you through how to fortify your Deepkit applications by locking down exposed services and endpoints, managing your application secrets safely, enforcing HTTPS to protect data in transit, and restricting insecure access patterns. Additionally, it offers practical advice on integrating external secret managers and applying security best practices tailored for production environments.
+
+---
+
+## 1. Why Secure Deepkit Applications?
+
+Deploying a Deepkit application exposes remote procedures, HTTP endpoints, and services that, if left unsecured, could become attack vectors. Securing your application helps you:
+
+- Prevent unauthorized access to sensitive operations and data
+- Safeguard application secrets like API keys, credentials, and encryption keys
+- Ensure data confidentiality and integrity via encrypted connections
+- Comply with security standards and regulatory requirements
+- Maintain trust with your users and clients
+
+Security is not a one-time setup but a continuous process integrated from development through deployment and operations.
+
+---
+
+## 2. Locking Down Exposed Services and Endpoints
+
+Deepkit applications expose services via HTTP and RPC protocols by default. Properly restricting these entry points is essential.
+
+### Step 1: Identify Publicly Exposed Endpoints
+
+Use the interactive debugger or API documentation features of the `FrameworkModule` to review all HTTP routes and RPC controllers your application exposes.
+
+### Step 2: Use Middleware and Guards
+
+Apply middleware or authorization guards to your HTTP and RPC controllers to control access.
+- For HTTP, create middleware functions that check authentication tokens, session states, or IP allowlists.
+- For RPC, implement security checks within RPC controllers or use custom guards.
+
+Example HTTP middleware registration in a module:
+```typescript
+import { createModuleClass } from '@deepkit/app';
+import { http } from '@deepkit/http';
+
+class AuthMiddleware {
+  async use(context: http.HttpContext, next: () => Promise<void>) {
+    if (!context.request.headers.get('Authorization')) {
+      context.response.statusCode = 401;
+      context.response.end('Unauthorized');
+      return;
+    }
+    await next();
+  }
+}
+
+export class SecureModule extends createModuleClass({}) {
+  override process() {
+    this.configureProvider<HttpRouterRegistry>(router => {
+      router.use(new AuthMiddleware());
+    });
+  }
+}
+```
+
+### Step 3: Restrict RPC Actions
+
+Ensure that RPC controllers only expose actions meant for client use. Keep internal-only actions protected with authorization logic or omit their decorators.
+
+### Step 4: Network-Level Restrictions
+
+Combine application-layer controls with network security like firewalls, security groups, or private VPNs that restrict access to your server to trusted sources.
+
+---
+
+## 3. Managing Application Secrets Safely
+
+Secrets such as API keys, database credentials, encryption keys, and OAuth tokens must be securely managed.
+
+### Best Practices
+
+- **Avoid Hardcoding Secrets:** Never embed secrets directly in your source code.
+- **Use Environment Variables:** Store sensitive values in environment variables or .env files loaded at runtime.
+- **Leverage Configuration Injection:** Define configuration classes that include secret fields injected securely via your deployment environment.
+- **Integrate External Secret Managers:** Use tools such as HashiCorp Vault, AWS Secrets Manager, or Azure Key Vault to dynamically load secrets during app startup.
+
+Example configuration class for secrets:
+```typescript
+export class AppConfig {
+  databaseUrl!: string; // Load from environment or secret manager
+  apiSecret!: string;
+}
+```
+
+Inject into your services or controllers:
+```typescript
+class MyService {
+  constructor(private config: AppConfig) {}
+
+  getSecret() {
+    return this.config.apiSecret;
+  }
+}
+```
+
+### Tips:
+
+- When integrating external secret managers, fetch secrets before app startup or during DI container initialization.
+- Rotate secrets regularly and update configurations without downtime using dynamic reload if possible.
+
+---
+
+## 4. Enforcing HTTPS
+
+To protect data in transit and meet security compliance, always serve your Deepkit application via HTTPS.
+
+### How to Enable HTTPS
+
+If you use the `FrameworkModule` for your server, enable HTTPS with these options:
+
+```typescript
+import { FrameworkModule } from '@deepkit/framework';
+
+new App({
+  imports: [new FrameworkModule({
+    ssl: true, // Enables HTTPS server
+    sslOptions: {
+      key: fs.readFileSync('path/to/key.pem'),
+      cert: fs.readFileSync('path/to/cert.pem')
+    },
+    httpsPort: 8443, // Optionally serve HTTPS on a different port
+  })]
+}).run();
+```
+
+#### Self-Signed Certificates
+
+For development, `selfSigned: true` automatically generates certificates, but use valid certificates from trusted authorities in production.
+
+### Redirect HTTP to HTTPS
+
+Configure your HTTP server or reverse proxy to redirect all HTTP traffic to HTTPS.
+
+### Tips:
+
+- Renew certificates before expiry using tools like Let's Encrypt.
+- Keep private keys secure and away from public access.
+
+---
+
+## 5. Restricting Insecure Access Patterns
+
+Prevent common insecure access patterns such as:
+
+- **Unrestricted Cross-Origin Requests:** Configure CORS policies to allow only trusted domains.
+- **Excessive Request Rates:** Use rate limiting to avoid brute force or denial-of-service attacks.
+- **Injection Attacks:** Use Deepkit's built-in parameter validation and sanitization using Runtime Types to limit injection risks.
+
+### Example: Rate Limiting Middleware
+
+Implement middleware that tracks request counts and blocks if limits exceeded.
+
+### Example: Strict CORS Setup
+
+Use HTTP headers to limit origins and allowed methods.
+
+---
+
+## 6. Integrating with External Secret Managers
+
+For enterprise-grade security, integrate with secret management solutions.
+
+### Integration Workflow
+
+1. Provision your secrets in the secret manager.
+2. Use Deepkit's startup hooks or module lifecycle hooks (`process()`) to pull secrets before service initialization.
+3. Inject pulled secrets into configuration classes or providers.
+
+### Example: Using AWS Secrets Manager
+
+```typescript
+import { createModuleClass } from '@deepkit/app';
+import AWS from 'aws-sdk';
+
+class AwsSecretsModule extends createModuleClass({}) {
+  override async process() {
+    const client = new AWS.SecretsManager({ region: 'us-east-1' });
+    const secret = await client.getSecretValue({ SecretId: 'myAppSecret' }).promise();
+    const secrets = JSON.parse(secret.SecretString!);
+
+    this.configureProvider<AppConfig>({
+      databaseUrl: secrets.databaseUrl,
+      apiSecret: secrets.apiSecret,
+    });
+  }
+}
+```
+
+---
+
+## 7. Security Best Practices in Production
+
+- **Least Privilege:** Restrict user roles and API access rights conservatively.
+- **Secure Defaults:** Configure your application with secure defaults (e.g., no open endpoints).
+- **Use Dependency Injection:** Inject security-critical services like authorization, authentication providers, and loggers consistently.
+- **Hide Detailed Errors:** Avoid exposing stack traces or sensitive error info to clients.
+- **Monitor Access:** Enable logging and monitoring of authentication and authorization failures.
+- **Regular Updates:** Keep Deepkit dependencies and your application up to date with latest security patches.
+- **Secret Rotation:** Implement automated rotation of secrets if feasible.
+
+---
+
+## 8. Troubleshooting Common Security Issues
+
+<AccordionGroup title="Common Security Issues and Solutions">
+<Accordion title="Unauthorized Access Despite Middleware">
+Ensure middleware is correctly registered and invoked before route handlers. Confirm that your guards or middleware do not accidentally skip `next()`.
+</Accordion>
+<Accordion title="Application Secrets Not Loaded">
+Check environment variable presence or secret manager connectivity. Validate configuration injection points and module lifecycle order.
+</Accordion>
+<Accordion title="HTTPS Server Not Starting">
+Verify SSL certificate and key paths. Confirm ports are free and accessible. Check for configuration typos in `sslOptions`.
+</Accordion>
+<Accordion title="Cross-Origin Requests Being Blocked Unexpectedly">
+Review CORS middleware configuration for allowed origins and headers. Check browser console for precise errors.
+</Accordion>
+<Accordion title="RPC Actions Accessible Without Authentication">
+Ensure your RPC controllers check authentication state or use guards. Do not expose sensitive actions without controls.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 9. Summary
+
+This guide emphasized securing your Deepkit application using a multi-layered approach:
+
+- Lock down exposed services and enforce access controls
+- Manage application secrets securely with environment variables or secret managers
+- Enforce HTTPS for encrypted communication
+- Restrict insecure access patterns like CORS issues and brute force
+- Follow production best practices including monitoring, patching, and least privileges
+
+With these steps, your Deepkit applications will be prepared to operate securely in production environments.
+
+---
+
+## Further Reading and Resources
+
+- [Deepkit Framework Modules](../app/modules.md) — Learn about module lifecycle hooks to integrate security at startup.
+- [Dependency Injection Basics](../dependency-injection-basics.md) — How to inject security-related providers.
+- [Deepkit RPC Security](../rpc/security.md) — Specific security considerations for RPC endpoints.
+- [Production Deployment Overview](../../deployment/deploying-to-production/production-deployment-overview.md) — Combining security with deployment best practices.
+- [Environment Configuration](../../deployment/deploying-to-production/environment-configuration.md) — Securely manage secrets and config in production.
+
+For advanced security hardening, consult the [Production Security Hardening Checklist](../security-and-hardening/security-hardening-checklist.md).
+
+---

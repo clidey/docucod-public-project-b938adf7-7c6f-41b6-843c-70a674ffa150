@@ -1,0 +1,165 @@
+---
+title: "Integrating with Other Systems"
+description: "Learn about Deepkit’s seamless integration points: serverless platforms, GraphQL, OpenAPI/Swagger, cloud providers, frontend frameworks (like Angular and Remix), and real-world deployment scenarios. See which interfaces and packages to explore for each integration."
+---
+
+# Integrating with Other Systems
+
+Deepkit is designed from the ground up to offer seamless integration with a broad range of systems encountered in modern application development and deployment. Whether you want to run your app on serverless platforms, generate OpenAPI specifications, integrate with GraphQL backends, connect with popular frontend frameworks or deploy on cloud providers, Deepkit provides clear interfaces and specialized packages to empower you.
+
+This page guides you through the major integration points, highlighting which Deepkit packages and interfaces to explore for each scenario and referencing best practices and practical workflows.
+
+---
+
+## Serverless Platforms
+
+Deepkit applications can be deployed on popular serverless platforms such as AWS Lambda, Google Cloud Functions, and Azure Functions. By leveraging Deepkit’s modular architecture and HTTP/RPC abstractions, you can easily wire your handlers to serverless function entry points.
+
+### How to Integrate
+
+- Use Deepkit’s HTTP or RPC modules to define handlers as usual.
+- Adapt Deepkit’s request handling to serverless event models by wrapping or adapting the Deepkit `App` handler logic inside your cloud provider’s function signature.
+- Leverage dependency injection and modular imports to isolate cloud-specific logic.
+
+### Relevant Packages
+
+- `@deepkit/http`: Use it to define HTTP handlers.
+- `@deepkit/rpc`: For efficient communication in microservice architectures.
+
+### Tips
+
+- Optimize cold start time by minimizing bootstrap logic.
+- Consider using the OpenAPI module for API documentation in serverless environments.
+
+---
+
+## GraphQL Integration
+
+Deepkit doesn't provide a GraphQL server out of the box, but integrates well with GraphQL ecosystems. You can complement your Deepkit backend by using GraphQL modules or servers alongside.
+
+### How to Integrate
+
+- Use Deepkit’s runtime types and validations for defining your data models.
+- Create GraphQL resolvers using libraries like Apollo Server and reuse Deepkit models.
+- Share business logic and validation rules between your Deepkit HTTP/RPC endpoints and GraphQL schema.
+
+### Recommended Workflow
+
+1. Define your models using Deepkit runtime types.
+2. Use those models in your GraphQL resolvers and Deepkit routes.
+3. Leverage shared validation and serialization rules.
+
+### Recommended Packages
+
+- Use `@deepkit/type` for runtime type definitions.
+- Use GraphQL libraries like Apollo Server or Nexus.
+
+---
+
+## OpenAPI / Swagger Support
+
+Deepkit offers built-in facilities to generate OpenAPI documentation automatically based on your HTTP controllers and routes.
+
+### Benefits
+
+- Generate up-to-date REST API documentation effortlessly.
+- Provide interactive API exploration via the Deepkit API Console.
+
+### How to Enable
+
+- Import the `OpenApiModule` in your application.
+
+```typescript
+import { App } from '@deepkit/app';
+import { OpenApiModule } from '@deepkit/openapi';
+
+const app = new App({
+  imports: [new OpenApiModule()],
+  // other options
+});
+
+app.run();
+```
+
+- Access your API documentation at `/openapi` endpoint.
+
+### Integration with API Console
+
+Combine `OpenApiModule` with `@deepkit/api-console` to provide an interactive web UI for browsing and testing your API.
+
+---
+
+## Frontend Frameworks
+
+Deepkit integrates smoothly with various frontend frameworks to deliver full-stack TypeScript applications.
+
+### Angular & Remix
+
+- Use Deepkit RPC clients or HTTP endpoints as your backend API.
+- Share TypeScript models and interfaces between frontend and backend for type safety.
+
+### How to Integrate
+
+- Generate open API specs and import them as typed clients in your frontend.
+- Use Deepkit RPC for streamlined type-safe client-server communication.
+
+### Practical Tips
+
+- For Angular, consume OpenAPI specs with tools like `ng-swagger-gen`.
+- For Remix, use HTTP routes defined in Deepkit to handle backend data fetching.
+
+### Related Packages
+
+- `@deepkit/rpc`: For type-safe isomorphic client-server communication.
+- `@deepkit/openapi`: For API documentation consumed by frontend clients.
+
+---
+
+## Cloud Providers & Deployment
+
+Deepkit apps can be deployed on cloud infrastructure easily. Whether using traditional VM instances or container orchestration platforms like Kubernetes, Deepkit adapts well.
+
+### Deployment Options
+
+- Containerize your Deepkit app and deploy to services like AWS ECS, Google Cloud Run, Azure App Services.
+- Use Infrastructure as Code tools to manage deployments.
+- Use environment variable-based configuration support in Deepkit modules to manage cloud configurations.
+
+### Recommended Practices
+
+- Separate configuration from code using Deepkit’s configuration schema.
+- Implement logging and monitoring hooks via Deepkit event listeners.
+
+### Useful Links
+
+- See the [Deployment](/deployment) section for detailed guides.
+
+---
+
+## Summary
+
+Deepkit’s modular and TypeScript-first design enables it to fit naturally into diverse ecosystems. It supports serverless models, complements GraphQL backends, automatically generates API documentation, integrates well with popular frontend frameworks, and is cloud deployment ready.
+
+For detailed instructions, explore the referenced Deepkit packages and documentation pages with real-world usage examples.
+
+---
+
+## See Also
+
+- [OpenAPI Module](/library/openapi.md)
+- [API Console](/library/api-console.md)
+- [RPC Framework](/library/rpc.md)
+- [Dependency Injection](/documentation/dependency-injection.md)
+- [Getting Started Guides](/getting-started/prerequisites-installation/installing-deepkit-framework)
+- [Deployment](/deployment/deploying-to-production/production-deployment-overview)
+
+---
+
+## Next Steps
+
+- Explore how to enable the OpenAPI module to generate Swagger docs.
+- Try integrating Deepkit RPC client with your frontend framework.
+- Experiment with deploying your app to a serverless platform like AWS Lambda.
+- Review how to share models and validation rules between HTTP and GraphQL.
+
+Deepkit’s ecosystem and modular approach ensure future-proof and scalable integration paths for your applications.
