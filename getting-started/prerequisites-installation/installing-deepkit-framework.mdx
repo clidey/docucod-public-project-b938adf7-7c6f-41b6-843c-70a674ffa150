@@ -3,4 +3,208 @@ title: "Installing Deepkit Framework"
 description: "Details how to install Deepkit Framework using NPM or Yarn, for both global and project-local setups. Walks through the key installation command (`npm init @deepkit/app@latest my-deepkit-app`), with troubleshooting for common issues like permissions, missing dependencies, or network errors."
 ---
 
-*This page will automatically be generated from the codebase*
+# Installing Deepkit Framework
+
+This guide walks you through the practical steps to install Deepkit Framework in your project using NPM or Yarn, covering both global and local setups. It includes troubleshooting tips for common issues like permissions, missing dependencies, or network errors, ensuring a smooth onboarding experience.
+
+---
+
+## 1. Prerequisites & System Preparation
+
+Before installing Deepkit Framework, ensure your system meets these requirements:
+
+- **Node.js**: Version 14 or higher is required. Verify with:
+
+  ```sh
+  node -v
+  ```
+
+- **Package Manager**: You can use NPM or Yarn.
+- **TypeScript and ts-node**: Typically installed as part of your project dependencies.
+- **Internet Connectivity**: Required to download packages from the NPM registry.
+
+
+If you are new to Deepkit Framework, it is recommended to start with a fresh project folder.
+
+---
+
+## 2. Installation Methods
+
+### 2.1 Use `npm init` to Create a New Deepkit App (Recommended)
+
+The easiest way to install and start a new Deepkit project with the framework is to use the initializer:
+
+```sh
+npm init @deepkit/app@latest my-deepkit-app
+```
+
+This command will:
+
+- Create a new folder named `my-deepkit-app`.
+- Set up all the necessary dependencies, including `@deepkit/framework`.
+- Generate a starter `app.ts` and associated files.
+
+
+### 2.2 Installing Directly into an Existing Project
+
+If you already have a Node.js project and want to add Deepkit Framework, install via:
+
+```sh
+npm install @deepkit/framework
+```
+
+or with Yarn:
+
+```sh
+yarn add @deepkit/framework
+```
+
+This will add Deepkit Framework as a dependency.
+
+---
+
+## 3. Verifying the Installation
+
+Once installed, verify that Deepkit Framework is available:
+
+1. Check your `package.json` for `@deepkit/framework` under dependencies.
+
+2. Create a minimal `app.ts` file to test:
+
+```typescript
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+
+const app = new App({
+  imports: [new FrameworkModule({ debug: true })],
+});
+
+app.command('hello', (logger) => {
+  logger.log('Hello, Deepkit Framework installed properly!');
+});
+
+app.run();
+```
+
+3. Run the command:
+
+```sh
+npx ts-node app.ts hello
+```
+
+You should see:
+
+```
+Hello, Deepkit Framework installed properly!
+```
+
+---
+
+## 4. Usage: Running the HTTP Server
+
+With the framework installed, you automatically gain access to HTTP and RPC server commands.
+
+1. Register a simple HTTP route in your `app.ts`:
+
+```typescript
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+import { HttpRouterRegistry } from '@deepkit/http';
+
+const app = new App({
+  imports: [new FrameworkModule({ debug: true })],
+});
+
+const router = app.get(HttpRouterRegistry);
+
+router.get('/', () => 'Hello World');
+
+app.run();
+```
+
+2. Start the HTTP server with the `server:start` command:
+
+```sh
+npx ts-node app.ts server:start
+```
+
+3. Confirm the server is running by opening a new terminal and executing:
+
+```sh
+curl http://localhost:8080/
+```
+
+Expected output:
+
+```
+Hello World
+```
+
+---
+
+## 5. Troubleshooting Common Issues
+
+### Permission Errors
+
+If you see permission denied errors when installing or running commands:
+
+- On Linux/macOS, consider using `sudo` carefully or change folder permissions.
+- Alternatively, use Node Version Manager (nvm) to avoid permission problems.
+
+### Missing Dependencies or Peer Dependency Warnings
+
+- Ensure all necessary peer dependencies are installed.
+- Run `npm install` or `yarn install` again after updating your package.json.
+
+### Network Errors or Package Download Failures
+
+- Check your internet connectivity.
+- If behind a proxy, configure NPM proxy settings accordingly.
+- Retry installation later if NPM registry is unreachable.
+
+### ts-node or TypeScript Issues
+
+- Deepkit requires TypeScript and ts-node for executing `.ts` files directly. Make sure these are installed globally or locally:
+
+  ```sh
+  npm install typescript ts-node
+  ```
+
+- Verify your `tsconfig.json` includes `"reflection": true` for Deepkit runtime type features.
+
+### Command Not Found Errors
+
+- Ensure you use `npx` or the full path to `ts-node` when running commands.
+- Alternatively, add `./node_modules/.bin` to your system PATH.
+
+---
+
+## 6. Best Practices & Tips
+
+- Use the `debug: true` option in `FrameworkModule` during development to enable debugging and profiler tools.
+- Start with `npm init @deepkit/app@latest` for a smooth, curated setup.
+- Keep your dependencies up to date to avoid compatibility issues.
+- Explore related documentation on CLI commands, HTTP routing, and RPC servers once installation is complete.
+
+---
+
+## 7. Next Steps
+
+Now that Deepkit Framework is installed:
+
+- Read [Creating Your First Deepkit App](../../guides/getting-started/create-new-app) to build your first app.
+- Learn about configuration in [Configuration Basics](../../getting-started/first-app-setup/configuration-basics).
+- Explore HTTP and RPC routing to develop backend APIs.
+- Consult [Troubleshooting Common Issues](../../getting-started/troubleshooting-next-steps/common-issues) for deeper problem-solving guidance.
+
+---
+
+## Useful References
+
+- [Deepkit Framework Overview](../../overview/introduction-and-value/product-intro)
+- [Deepkit App & CLI Basics](../../documentation/app)
+- [Getting Started with Dependency Injection](../../dependency-injection/getting-started.md)
+
+---
+
+By following this guide, you will have successfully installed Deepkit Framework, verified its operation, and run your first HTTP server, paving the way for building scalable enterprise applications with Deepkit.
