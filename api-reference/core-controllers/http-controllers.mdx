@@ -3,4 +3,413 @@ title: "HTTP Controllers & Endpoints"
 description: "Document the structure and lifecycle of HTTP controllers in Deepkit, including route configuration, request/response shapes, status codes, and example handler definitions. Covers core patterns for creating RESTful APIs and integrating with the HTTP transport system."
 ---
 
-*This page will automatically be generated from the codebase*
+# HTTP Controllers & Endpoints
+
+Deepkit's HTTP Controllers & Endpoints module is the core of building RESTful APIs with Deepkit. It defines the structure, lifecycle, and management of HTTP controllers—classes and functions that handle HTTP requests. This page details how to configure routes, define request and response shapes, manage status codes, and write handler methods that automatically deserialize, validate, and respond to HTTP traffic.
+
+It covers both the functional API style using the `HttpRouterRegistry` and the controller-based approach using TypeScript classes and decorators. You'll learn how to integrate with Deepkit's dependency injection system, apply middleware, and hook into the powerful HTTP workflow engine.
+
+---
+
+## Table of Contents
+- [Overview of HTTP Controllers](#overview-of-http-controllers)
+- [Defining Routes: Functional API vs. Controller Classes](#defining-routes-functional-api-vs-controller-classes)
+- [Lifecycle of an HTTP Request](#lifecycle-of-an-http-request)
+- [Route Configuration and Decorators](#route-configuration-and-decorators)
+- [Request Parameters and Validation](#request-parameters-and-validation)
+- [Response Types and Status Codes](#response-types-and-status-codes)
+- [Middleware Integration](#middleware-integration)
+- [Examples of Handler Definitions](#examples-of-handler-definitions)
+- [Best Practices](#best-practices)
+- [Troubleshooting & Common Issues](#troubleshooting--common-issues)
+
+---
+
+## Overview of HTTP Controllers
+
+HTTP Controllers in Deepkit define how your server responds to HTTP requests. They provide:
+
+- Convenient route definitions using decorators on class methods or standalone functions.
+- Automatic deserialization and validation of incoming request data.
+- Integration with Deepkit's Dependency Injection for accessing services like databases or loggers.
+- Structured metadata like route names, descriptions, groups, and response schemas.
+- Lifecycle hooks and event-driven workflow integration.
+
+Deepkit supports both:
+
+- **Functional API routes** registered via `HttpRouterRegistry`.
+- **Class-based controllers** with decorators like `@http.GET()` to annotate HTTP methods.
+
+Both approaches share the same underlying pipeline and features.
+
+---
+
+## Defining Routes: Functional API vs. Controller Classes
+
+### Functional API
+
+The functional API uses the `HttpRouterRegistry` to define routes directly as functions. Each route handler function declares parameters representing request inputs and dependencies.
+
+```typescript
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+import { HttpRouterRegistry, HttpBody } from '@deepkit/http';
+
+const app = new App({
+    imports: [new FrameworkModule()]
+});
+
+const router = app.get(HttpRouterRegistry);
+
+router.get('/user/:id', (id: number, database: Database) => {
+  // Business logic here
+  return database.query(User).filter({ id }).findOne();
+});
+
+router.post('/user', (user: HttpBody<User>) => {
+  // Handle user creation
+});
+
+app.run();
+```
+
+This style allows quick setup and is ideal for modular route registrations and simpler handlers.
+
+### Controller Classes
+
+Alternatively, routes can be defined within classes decorated via Deepkit's `http` decorator methods attached to class methods.
+
+```typescript
+import { http } from '@deepkit/http';
+
+class UserController {
+    constructor(private database: Database) {}
+
+    @http.GET('/user/:id')
+    getUser(id: number) {
+        return this.database.query(User).filter({ id }).findOne();
+    }
+
+    @http.POST('/user')
+    createUser(user: HttpBody<User>) {
+        // Create user logic
+    }
+}
+
+const app = new App({
+    controllers: [UserController],
+    imports: [new FrameworkModule()]
+});
+```
+
+Controllers promote clear organization for large applications and clean separation of concerns.
+
+---
+
+## Lifecycle of an HTTP Request
+
+Deepkit processes HTTP requests through a workflow engine with the following key stages:
+
+1. **Request Received:** `httpWorkflow.onRequest`
+2. **Routing:** Resolving the route and controller (`onRoute`)
+3. **Authentication:** Trigger authentication-related logic (`onAuth`)
+4. **Parameter Resolution:** Deserialize and validate input parameters (`onResolveParameters`)
+5. **Access Control:** Handle access denial (`onAccessDenied`)
+6. **Controller Action:** Invoke the handler method or function (`onController`)
+7. **Error Handling:** Catch and handle errors thrown (`onControllerError`)
+8. **Response Serialization:** Convert return values to HTTP response (`onResponse`)
+
+Middleware and event listeners can hook into any stage to customize workflows or add cross-cutting concerns (e.g., logging, auth).
+
+---
+
+## Route Configuration and Decorators
+
+Routes and HTTP controller methods can be configured via decorators provided in the `http` namespace.
+
+| Decorator          | Purpose                                                                              |
+|--------------------|--------------------------------------------------------------------------------------|
+| `@http.GET(path)`   | Defines a GET route on the given path.                                              |
+| `@http.POST(path)`  | Defines a POST route.                                                                |
+| `@http.PUT(path)`   | Defines a PUT route.                                                                 |
+| `@http.DELETE(path)`| Defines a DELETE route.                                                              |
+| `@http.PATCH(path)` | Defines a PATCH route.                                                              |
+| `@http.OPTIONS(path)` | Defines OPTIONS for CORS or related uses.                                          |
+| `@http.Any(path)`   | Match any HTTP method for the path.                                                 |
+| `@http.name(name)`  | Assigns a unique route name, useful for URL resolution.                            |
+| `@http.middleware(middleware)` | Assigns middleware to the route or controller.                              |
+| `@http.group(...groups)`| Assigns group tags for route categorization and middleware targeting.             |
+| `@http.category(category)` | Categorizes the route for filtering or middleware scopes.                        |
+| `@http.response(statusCode, description, type)` | Documents expected response status and data types for endpoints.      |
+
+These decorators enhance route metadata and behavior, enabling modular and scalable API construction.
+
+---
+
+## Request Parameters and Validation
+
+Deepkit automatically extracts request values from:
+
+- **Path parameters** (e.g., `/user/:id`) mapped by position and name.
+- **Query parameters** (e.g., `?filter=active`).
+- **Body payloads**, deserialized using `HttpBody<T>`.
+- **Uploaded files** via `UploadedFile` type.
+
+The input parameters of the handler methods or functions define what gets extracted and validated, leveraging Deepkit's runtime validation capabilities.
+
+Example of validated input:
+
+```typescript
+import { Positive } from '@deepkit/type';
+
+router.get('/user/:id', (id: number & Positive) => {
+    // id is guaranteed to be a positive number
+});
+```
+
+For complex parameters, resolvers can be registered to handle specialized deserialization:
+
+```typescript
+import { http, RouteParameterResolver, RouteParameterResolverContext } from '@deepkit/http';
+
+class MyComplexTypeResolver implements RouteParameterResolver {
+    async resolve(context: RouteParameterResolverContext) {
+        // custom logic to resolve complex parameter
+    }
+}
+
+@http.resolveParameter(MyComplexType, MyComplexTypeResolver)
+class MyController {
+    @http.GET('/complex')
+    myRoute(param: MyComplexType) {
+        // handle complex param
+    }
+}
+```
+
+This system ensures type safety, strong validation, and clean parameter handling.
+
+---
+
+## Response Types and Status Codes
+
+Handler methods can return various types to produce an HTTP response:
+
+- Plain objects, arrays, or primitives (auto serialized as JSON).
+- Specialized response classes: `HtmlResponse`, `JSONResponse`, `Response` for custom content and headers.
+- Streams for data streaming.
+- `Redirect` for HTTP redirects.
+- `Error` or HTTP error classes to trigger error handling logic.
+
+Example of returning JSON:
+
+```typescript
+router.get('/', (): { message: string } => {
+  return { message: 'Hello World' };
+});
+```
+
+Example returning HTML:
+
+```typescript
+import { HtmlResponse } from '@deepkit/http';
+
+router.get('/', () => {
+  return new HtmlResponse('<h1>Hello World</h1>');
+});
+```
+
+You can also explicitly document response status codes and their return types using the `response()` decorator:
+
+```typescript
+http.GET('/user/:id').response<User>(200, 'User object found').response(404, 'User not found');
+```
+
+Deepkit uses these declarations for runtime guarantees and autogenerated API documentation.
+
+---
+
+## Middleware Integration
+
+Middleware in Deepkit HTTP offers extensibility and control over request handling. Middleware can:
+
+- Be global (applied to all routes).
+- Limited to specific controllers or route groups.
+- Applied selectively per route via decorators or programmatic filter.
+
+Middlewares are implemented either as classes implementing `HttpMiddleware` or as functions:
+
+```typescript
+class MyMiddleware implements HttpMiddleware {
+    async execute(request: HttpRequest, response: HttpResponse, next: (err?: any) => void) {
+        // Preprocessing logic
+        next();
+    }
+}
+
+function myMiddlewareFunction(req: HttpRequest, res: HttpResponse, next: (err?: any) => void) {
+    // Function middleware logic
+    next();
+}
+```
+
+Registration examples:
+
+- Globally:
+
+```typescript
+new App({
+    middlewares: [ httpMiddleware.for(MyMiddleware) ]
+});
+```
+
+- Per controller or per route:
+
+```typescript
+@http.middleware(MyMiddleware)
+class UserController {
+   // ...
+}
+```
+
+Middlewares support timeouts, filtering by HTTP method, path patterns, groups, categories, and modules.
+
+You can also use existing Express middlewares seamlessly by wrapping them with `httpMiddleware.for()`.
+
+---
+
+## Examples of Handler Definitions
+
+### Defining a GET route in a Controller
+
+```typescript
+class UserController {
+    constructor(private database: Database) {}
+
+    @http.GET('/user/:id')
+    async getUser(id: number) {
+        const user = await this.database.query(User).filter({ id }).findOneOrUndefined();
+        if (!user) throw new HttpNotFoundError('User not found');
+        return user;
+    }
+}
+```
+
+### Functional POST route handling JSON body
+
+```typescript
+router.post('/user/register', (user: HttpBody<User>) => {
+    // user is automatically deserialized and validated
+    // Insert user to DB
+    return true;
+});
+```
+
+### Handling file uploads
+
+```typescript
+import { HttpBody, UploadedFile } from '@deepkit/http';
+
+class FileUpload {
+    file!: UploadedFile;
+}
+
+router.post('/upload', (body: HttpBody<FileUpload>) => {
+    const uploadedFile = body.file;
+    // Access uploadedFile properties: size, path, name, type
+    // Save or process file
+});
+```
+
+### Adding additional response headers
+
+```typescript
+import { Response } from '@deepkit/http';
+
+router.get('/', () => {
+    return new Response('Hello World', 'text/plain')
+        .header('X-Custom-Header', 'Custom Value');
+});
+```
+
+### Performing redirects
+
+```typescript
+import { Redirect } from '@deepkit/http';
+
+router.get('/old-route', () => {
+    return Redirect.toUrl('/new-url');
+});
+
+router.get({ path: '/dashboard', name: 'dashboard' }, () => 'Dashboard');
+
+router.get('/start', () => {
+    return Redirect.toRoute('dashboard');
+});
+```
+
+---
+
+## Best Practices
+
+- Prefer controller classes for larger applications to keep routes organized.
+- Use type-safe parameters and validation annotations to ensure input integrity.
+- Define response types with the `.response()` decorator to benefit from autogenerated API documentation.
+- Inject dependencies like database clients or loggers via constructor or method parameters.
+- Use middleware selectively on controllers/routes rather than globally for performance and clarity.
+- Leverage the HTTP workflow events to customize authentication, authorization, or error handling.
+- Always handle errors explicitly by throwing built-in `HttpError` types or custom errors extending them.
+- Use route naming consistently to enable safe URL generation and redirects.
+
+
+---
+
+## Troubleshooting & Common Issues
+
+### Common Pitfalls
+
+- **Missing `experimentalDecorators` flag:** When using controller classes with decorators, be sure TypeScript's `experimentalDecorators` option is enabled in your `tsconfig.json`.
+
+- **Dependency Injection failures:** Verify that providers are registered and injectable, especially when injecting into routes or controllers.
+
+- **Validation errors:** Deepkit automatically returns `400 Bad Request` with detailed messages on validation failure. Check input types carefully.
+
+- **Middleware timeouts:** Middleware must call `next()`. If not called within default 4 seconds, a warning is logged.
+
+- **Route conflicts:** Avoid duplicate routes or overlapping paths with the same HTTP methods to prevent unexpected routing behavior.
+
+
+### Debugging Tips
+
+- Use Deepkit's built-in API Console or OpenAPI generation to inspect available routes and expected parameters.
+- Listen to HTTP workflow events (`httpWorkflow.onRoute`, `httpWorkflow.onControllerError`) to add custom logging.
+- Enable detailed logging for the HTTP router to trace routing decisions and middleware execution.
+
+---
+
+## Summary
+
+This page has presented an in-depth look at Deepkit's HTTP Controllers & Endpoints: how to define and manage routes via functional or controller APIs, integrate with dependency injection, validate inputs automatically, customize response types, and extend the processing pipeline with middleware and events. It equips developers with practical knowledge and code examples to build robust, type-safe, and scalable RESTful APIs.
+
+
+---
+
+## Related Documentation
+
+- [Getting Started with Deepkit HTTP](../getting-started)
+- [Dependency Injection in HTTP Controllers](./dependency-injection.md)
+- [Middleware System](./middleware.md)
+- [Error Handling & HTTP Status Codes](../api-error-handling/http-errors.md)
+- [OpenAPI and API Documentation](../openapi.md)
+
+
+---
+
+## Additional Resources
+
+- Deepkit GitHub Repository: [https://github.com/deepkit/deepkit-framework](https://github.com/deepkit/deepkit-framework)
+- Runtime Types Documentation: [guides/core-workflows/data-validation-guide.md](../guides/core-workflows/data-validation-guide.md)
+
+---
+
+For a smooth start, begin with [Getting Started with Deepkit HTTP](../getting-started) and progressively use controller classes combined with middleware. Harness the power of automatic validation and dependency injection for building production-ready HTTP APIs with Deepkit.
