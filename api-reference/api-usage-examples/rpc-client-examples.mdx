@@ -3,4 +3,226 @@ title: "RPC Client & Server Code Snippets"
 description: "Actionable code samples for communicating via Deepkit RPC, including connection setup, method invocation, streaming, and error handling. Covers both client and server-side patterns and best practices."
 ---
 
-*This page will automatically be generated from the codebase*
+# RPC Client & Server Code Snippets
+
+Harness the full power of Deepkit RPC with actionable, real-world code examples that demonstrate how to establish connections, invoke methods, handle streaming data flows reactively, and manage errors gracefully. This guide provides clear client and server patterns you can immediately implement to build robust, type-safe, and efficient RPC communication channels.
+
+---
+
+## Getting Started with RPC Communication
+
+Deepkit RPC lets your client call server methods as if those methods existed locally. At the same time, it supports streaming and error forwarding, all with automatic serialization of data types including complex classes.
+
+Below, you will find step-by-step examples showcasing how to set up a client-server communication via WebSocket, invoke methods, subscribe to streams, and handle errors effectively.
+
+### 1. Server-Side: Define Controllers and Actions
+
+The server exposes functionality through controller classes decorated with `@rpc.controller`, and each callable method is marked with `@rpc.action`. Deepkit automatically handles parameter validation and serialization.
+
+```typescript
+import { rpc } from '@deepkit/rpc';
+import { Observable, Subject } from 'rxjs';
+
+@rpc.controller('/main')
+export class MyController {
+    @rpc.action()
+    hello(name: string): string {
+        return 'Hello ' + name;
+    }
+
+    @rpc.action()
+    async getUser(id: number): Promise<User> {
+        return new User(id);
+    }
+
+    @rpc.action()
+    timesSubject(): Subject<Date> {
+        const subject = new Subject<Date>();
+        const interval = setInterval(() => subject.next(new Date()), 1000);
+
+        setTimeout(() => {
+            subject.complete();
+            clearInterval(interval);
+        }, 10000);
+
+        // Cleanup on unsubscribe
+        subject.subscribe().add(() => clearInterval(interval));
+
+        return subject;
+    }
+
+    @rpc.action()
+    timesObservable(): Observable<Date> {
+        return new Observable(observer => {
+            const interval = setInterval(() => observer.next(new Date()), 1000);
+
+            setTimeout(() => {
+                observer.complete();
+                clearInterval(interval);
+            }, 10000);
+
+            return { unsubscribe() { clearInterval(interval); } };
+        });
+    }
+}
+```
+
+### 2. Server Setup: Starting the RPC Server
+
+Use the `RpcKernel` to register controllers and then create a transport server like `RpcWebSocketServer` over WebSocket or TCP.
+
+```typescript
+import { RpcKernel } from '@deepkit/rpc';
+import { RpcWebSocketServer } from '@deepkit/rpc-tcp';
+
+const kernel = new RpcKernel();
+kernel.registerController(MyController);
+
+const server = new RpcWebSocketServer(kernel, 'localhost:8081');
+server.start({ host: '127.0.0.1', port: 8081 });
+
+console.log('Server running at ws://127.0.0.1:8081');
+```
+
+### 3. Client-Side: Connecting and Calling Methods
+
+On the client, instantiate the appropriate client (e.g., `RpcWebSocketClient`), obtain a proxy controller by referencing the same path, and call methods asynchronously.
+
+```typescript
+import { RpcWebSocketClient } from '@deepkit/rpc';
+import type { MyController } from './server.ts';
+
+async function run() {
+    const client = new RpcWebSocketClient('ws://127.0.0.1:8081');
+    const mainController = client.controller<MyController>('/main');
+
+    const greeting = await mainController.hello('World');
+    console.log(greeting); // Outputs: Hello World
+
+    client.disconnect();
+}
+
+run().catch(console.error);
+```
+
+### 4. Streaming: Subscribe to Server Streams Reactively
+
+Deepkit RPC natively supports RxJS streaming types. Return an `Observable` or `Subject` from a server action; the client receives a matching observable proxy.
+
+```typescript
+// Client side
+const sensorData = await mainController.timesSubject();
+const subscription = sensorData.subscribe(value => {
+    console.log('Current time:', value);
+});
+
+// When no longer interested
+subscription.unsubscribe();
+```
+
+### 5. Handling Errors Gracefully
+
+Errors thrown on the server are serialized and forwarded to the client, preserving class identity and stack traces if configured.
+
+```typescript
+// Server side
+import { entity } from '@deepkit/type';
+
+@entity.name('@error/custom')
+class CustomError extends Error {
+    codes: string[] = [];
+}
+
+@rpc.controller('/main')
+class MyController {
+    @rpc.action()
+    mightFail(value: string): string {
+        if (value !== 'ok') {
+            const error = new CustomError('Invalid value');
+            error.codes = ['400', 'INVALID_VALUE'];
+            throw error;
+        }
+        return 'Success';
+    }
+}
+```
+
+```typescript
+// Client side
+try {
+    await mainController.mightFail('wrong');
+} catch (error) {
+    if (error instanceof CustomError) {
+        console.error('Caught CustomError with codes:', error.codes);
+    } else {
+        console.error('Unexpected error:', error);
+    }
+}
+```
+
+### 6. Progress Tracking for Large Transfers
+
+When sending or receiving large payloads, track progress through built-in utilities.
+
+```typescript
+const progress = ClientProgress.track();
+progress.upload.subscribe(p => {
+    console.log(`Uploading: ${p.current} / ${p.total}`);
+});
+
+await mainController.uploadFile(new Uint8Array(1024 * 1024));
+```
+
+---
+
+## Practical Tips & Best Practices
+
+- **Use `@entity.name` to preserve class identity on clients:** Register all entity or error classes used across RPC boundaries to retain methods and nominal typing.
+- **Explicit Type Annotations Are Mandatory:** Always specify parameter and return types explicitly for serialization to work reliably.
+- **Unsubscribe from streams properly:** To free server resources, always unsubscribe from observables or subjects when no longer needed.
+- **Secure your RPC server:** Limit access or sanitize errors as appropriate in production to avoid leaking sensitive information.
+- **Modular design:** Define your controllers and DTOs in shared libraries used by both client and server for true type safety.
+
+---
+
+## Troubleshooting Common Issues
+
+<AccordionGroup title="Troubleshooting RPC Client & Server Communication">
+<Accordion title="Client Cannot Connect to Server">
+- Verify the server is running and listening on the correct host and port.
+- Ensure the client URL uses the correct protocol (`ws://` for WebSocket).
+- Check for firewall or network restrictions blocking the connection.
+- For Node.js clients, ensure the `ws` package is installed for WebSocket support.
+</Accordion>
+
+<Accordion title="Method Calls Return Undefined or Errors">
+- Confirm that your controller methods are decorated with `@rpc.action()`.
+- Validate that the client references the controller path correctly.
+- Ensure types are explicitly declared; do not rely on inference.
+- Look for serialization issues if using custom classes without `@entity.name`.
+</Accordion>
+
+<Accordion title="Streams Do Not Emit or Close Unexpectedly">
+- Make sure Observables or Subjects on the server are returning correctly.
+- Verify subscription lifecycle and proper unsubscription on the client.
+- Check server logs for uncaught errors that may close streams.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Additional Resources
+
+- [Deepkit RPC Getting Started Guide](/rpc/getting-started)
+- [RPC Controllers & Actions Reference](/api-reference/core-controllers/rpc-controllers)
+- [Streaming with RxJS in Deepkit RPC](/guides/real-time-apis-and-integrations/building-rpc-apis#streaming)
+- [Error Handling Patterns in RPC](/api-reference/api-error-handling/rpc-errors)
+- [Dependency Injection in Deepkit Framework](/guides/core-workflows/dependency-injection-basics)
+
+---
+
+This collection equips you with everything needed to build real-time, type-safe, and robust RPC-enabled applications with Deepkit Framework. By adopting proper client-server communication patterns, streaming strategies, and error handling, your applications will be performant, maintainable, and developer-friendly.
+
+---
+
+<Source url="https://github.com/deepkit/deepkit-framework" paths={[{"path": "examples/rpc-websockets/server.ts", "range": "1-28"},{"path": "examples/rpc-websockets/client.ts", "range": "1-23"},{"path": "packages/example-app/src/controller/rpc.controller.ts", "range": "1-50"}]} />
