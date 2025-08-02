@@ -3,4 +3,276 @@ title: "Learning from Examples and Best Practices"
 description: "Find, understand, and use example projects and codebases to learn deeper concepts or techniques. Step-by-step guide to leveraging public examples for troubleshooting unique workflows."
 ---
 
-*This page will automatically be generated from the codebase*
+# Learning from Examples and Best Practices
+
+Discover how to effectively find, understand, and utilize example projects and codebases within Deepkit. This guide empowers you to deepen your knowledge of core concepts and advanced techniques by exploring real-world scenarios. Whether troubleshooting unique workflows or seeking step-by-step guidance, leverage public examples to accelerate your learning journey.
+
+---
+
+## Why Learn from Examples?
+
+Example projects serve as practical blueprints demonstrating how Deepkit’s libraries and framework features come together. They reduce guesswork, reveal idiomatic patterns, and help clarify best practices.
+
+- **See real usage**: Understand how concepts like Dependency Injection, RPC, HTTP routing, and ORM integrate in actual apps.
+- **Troubleshooting aid**: Identify how common issues are solved or avoided by inspecting working samples.
+- **Accelerate mastery**: Learn incremental complexities, progressively moving from beginner to expert usage.
+
+
+## Navigating Example Projects
+
+The Deepkit documentation organizes examples by project category, often aligned with major features or packages such as HTTP, RPC, ORM, CLI, and front-end integration. To get started:
+
+1. **Browse Examples Overview:** Visit the Examples landing page to browse examples grouped by category. Categories reflect popular Deepkit modules or ecosystem areas, such as `rpc`, `http`, or `orm`.
+2. **Select a Category:** Choose a category matching your learning goals or a feature you want to explore.
+3. **Explore Individual Examples:** Dive into specific examples showing complete code with annotations, usage instructions, and links to full codebases.
+
+Example projects can be accessed through the documentation UI or publicly available GitHub repositories linked from the docs.
+
+
+## Understanding Example Structure
+
+Examples typically showcase one or more of the following:
+
+- **Controller Definitions:** HTTP, RPC, or CLI methods demonstrating request handling and parameter validation.
+- **Dependency Injection:** Proper service registration and constructor injection examples.
+- **Runtime Types & Validation:** Usage of Deepkit Type for validation and serialization.
+- **Database Interactions:** ORM entity definitions, queries, migrations, and connection setup.
+- **Front-end Integration:** Examples of Deepkit RPC clients used in frameworks like Angular or Remix.
+- **Streaming and Reactive Patterns:** Real-time data streaming via RxJS integration.
+
+Each example may include:
+- Descriptive titles and summaries
+- Inline rendered content blocks
+- Links to full working code repositories or example pages
+- Navigation back to wider example collections
+
+
+## Step-by-Step Guide to Leveraging Examples
+
+<Steps>
+<Step title="Identify Your Learning Objective">
+Define what concept or feature you want to understand more deeply, e.g., setting up RPC communication or performing database migrations.
+</Step>
+<Step title="Locate Relevant Example">
+Search or browse the Examples page filtered by category to find relevant samples.
+</Step>
+<Step title="Review Code and Annotations">
+Carefully read through example code and any accompanying rendered content to internalize the approach.
+</Step>
+<Step title="Run and Interact">
+Clone or download the example project if available, run it locally, and experiment by tweaking to see effects.
+</Step>
+<Step title="Apply Insights">
+Take learnings back to your own project, adapting patterns and practices to your workflow.
+</Step>
+</Steps>
+
+
+## Practical Tips and Best Practices
+
+- **Start Simple:** Begin with basic examples before progressing to complex scenarios involving streaming or multi-module apps.
+- **Use Shared TypeScript Types:** Leverage runtime types and shared models to maintain type safety and reduce duplication.
+- **Check Validation and Serialization:** Understand how validation is integrated seamlessly via runtime types in examples.
+- **Follow Dependency Injection Patterns:** Observe how dependencies are registered and injected to promote modular and testable code.
+- **Explore Error Handling:** See how errors are forwarded and handled in RPC and HTTP scenarios.
+- **Experiment with Streaming:** Use RxJS-based examples to grasp real-time data flow patterns.
+
+
+## Common Use Cases for Example Projects
+
+- **Troubleshooting unique workflows:** When you encounter a challenging integration, check samples for similar cases.
+- **Learning new features:** Use examples to understand new or unfamiliar Deepkit features quickly.
+- **Validating implementation:** Ensure your app follows best practices by comparing approaches.
+- **Sharing knowledge:** Examples act as teaching tools within your team.
+
+
+## Troubleshooting Unique Workflow Issues Using Examples
+
+Encounter issues with a workflow? Here’s how examples help:
+
+- **Compare Inputs and Outputs:** Verify your request formats and response types against examples.
+- **Matching Dependency Registration:** Confirm services are properly registered and injected.
+- **Validation Failures:** Refer to examples showing input validation constraints and error handling.
+- **Streaming Behavior:** Understand observable life cycles and subscription handling.
+
+
+## Where to Find Example Projects
+
+- **Documentation Website:** Navigate to the [Examples Landing Page](/documentation/examples) to browse categorized examples.
+- **GitHub Repositories:** Official example repositories are linked throughout the docs with full source.
+- **Within Library Pages:** Specific Deepkit library docs often contain curated examples demonstrating library usage.
+- **Community Contributions:** Engage with forums and community channels for shared examples.
+
+
+## Example: Loading and Displaying an Example in the Documentation UI
+
+Here is what happens when you open an example within the documentation:
+
+- The example is loaded by category and slug.
+- Metadata like title and description are displayed to explain the context.
+- Buttons provide navigation back to the full list or link to the full example source externally.
+- The rendered content block shows annotated code snippets or detailed explanations.
+
+
+```typescript
+// Loading an example component excerpt
+async load(category: string, slug: string) {
+    this.project.set(projectMap[category] || category);
+    this.id.set(category);
+    this.loading.set(true);
+    try {
+        this.example.set(await this.client.main.getExample(category, slug));
+    } catch {
+        this.pageResponse.notFound();
+    } finally {
+        this.loading.set(false);
+    }
+}
+```
+
+
+## Related Documentation
+
+- [Examples Overview and Search](./examples.component.ts)
+- [Using Deepkit RPC](../../guides/real-time-apis-and-integrations/building-rpc-apis.md)
+- [Deepkit HTTP Controllers](../../api-reference/core-controllers/http-controllers.md)
+- [Dependency Injection Basics](../../guides/core-workflows/dependency-injection-basics.md)
+- [Runtime Types and Validation](../../concepts/data-modeling-and-validation/runtime-types-and-reflection.md)
+- [Troubleshooting Tips](../../getting-started/troubleshooting-next-steps/common-issues.md)
+
+
+## Summary
+
+Learning through well-structured examples is fundamental to mastering Deepkit's full capabilities. These examples provide actionable, hands-on insights from beginner to expert levels covering controllers, dependency injection, data validation, API design, and streaming data. Make examples your daily companion on your development journey with Deepkit to troubleshoot, learn patterns, and accelerate productivity.
+
+---
+
+<Tip>
+Want to contribute your own examples? Check out the [Contributing Guide](../../faq/community-support-faq/contributing-faq.md) to share your knowledge with the community.
+</Tip>
+
+
+---
+
+## FAQs
+
+<AccordionGroup title="Learning from Examples FAQs">
+<Accordion title="How do I find examples relevant to my project?">
+Browse the documentation's Examples landing page where examples are categorized by Deepkit libraries or use cases such as RPC, HTTP routing, or ORM.
+</Accordion>
+
+<Accordion title="Can I run example projects locally?">
+Yes, many examples link to full repositories that you can clone and run on your machine to explore their behavior interactively.
+</Accordion>
+
+<Accordion title="Are examples updated to match the latest Deepkit version?">
+Examples are maintained alongside the framework and typically reflect the latest stable APIs and patterns. Always check the commit date or repo status.
+</Accordion>
+
+<Accordion title="Can examples help troubleshoot errors?">
+Absolutely. Examining example projects helps you compare your setup, validate request/response patterns, and understand how to handle validation or streaming correctly.
+</Accordion>
+
+<Accordion title="Where can I find examples integrating Deepkit with frontend frameworks?">
+Look for examples under categories related to client integrations or front-end frameworks such as Angular or Remix in the examples collection.
+</Accordion>
+</AccordionGroup>
+
+
+---
+
+## Troubleshooting and Common Issues When Using Examples
+
+- **Loading Errors**: Verify the category and slug names used to load examples match existing ones exactly.
+- **Version Mismatch**: Ensure your Deepkit version matches the example requirements to avoid deprecated or incompatible APIs.
+- **Missing Dependencies**: Follow example README instructions to install all required dependencies before running.
+- **Runtime Validation Failures**: Check example validation constraints and input data types carefully.
+- **Network or Access Issues**: Some examples referencing external URLs require internet access or proxy configuration.
+
+
+---
+
+## Practical Next Steps
+
+- Explore the [Examples Overview](/documentation/examples) in the docs first.
+- Select examples matching your learning goal, such as `rpc` controller examples for API design.
+- Clone linked GitHub example repos for hands-on experimentation.
+- Pair example studies with reading dependency injection and runtime types guides.
+- Use examples as templates to scaffold your own Deepkit applications.
+
+
+
+---
+
+
+# Deepkit Example Loading Component Code (Reference)
+
+Below is a snippet from the actual Deepkit example loading component showcasing typical user flow.
+
+```typescript
+@Component({
+    template: `
+        <div>
+            @if (loading()) {
+                <app-loading></app-loading>
+            }
+            @if (example(); as example) {
+                <app-title>{{example.title}} // Example for Deepkit {{project()}}</app-title>
+                <p>{{example.description}}</p>
+                <a routerLink="/documentation/{{id()}}/examples">Back to all {{ project() }} examples</a>
+                <app-render-content [content]="example.content"></app-render-content>
+            }
+            
+        </div>
+    `
+})
+export class ExampleComponent implements OnInit {
+    id = signal('');
+    project = signal('');
+    loading = signal(false);
+    example = signal<UiCodeExample | undefined>(undefined);
+
+    constructor(
+        private client: ControllerClient,
+        private activatedRoute: ActivatedRoute
+    ) {}
+
+    ngOnInit() {
+        this.activatedRoute.params.subscribe(params => {
+            this.load(params.category, params.slug);
+        });
+    }
+
+    async load(category: string, slug: string) {
+        this.project.set(projectMap[category] || category);
+        this.id.set(category);
+        this.loading.set(true);
+        try {
+            this.example.set(await this.client.main.getExample(category, slug));
+        } catch {
+            // handle not found
+        } finally {
+            this.loading.set(false);
+        }
+    }
+}
+```
+
+
+---
+
+
+# Additional Resources
+
+For a more comprehensive understanding, consult these related documentation pages:
+
+- [Deepkit Framework Introduction & Value Proposition](https://deepkit.io/documentation/introduction)
+- [Runtime Types & Validation](https://deepkit.io/documentation/runtime-types)
+- [Building Real-Time RPC APIs](https://deepkit.io/guides/real-time-apis-and-integrations/building-rpc-apis)
+- [Dependency Injection Basics](https://deepkit.io/guides/core-workflows/dependency-injection-basics)
+
+
+---
+
+
+---
