@@ -3,4 +3,312 @@ title: "Configuration Basics"
 description: "Explains the main configuration touchpoints (`config.ts`, environment variables, and CLI arguments) for customizing the new app. Shows users how to adjust basic settings—such as ports, logging, and DI setups—before first launch."
 ---
 
-*This page will automatically be generated from the codebase*
+# Configuration Basics
+
+Customize and fine-tune your Deepkit application through key configuration touchpoints before launching your first app. This guide walks you through the primary mechanisms for configuration: the `config.ts` class, environment variables, and CLI arguments. You will learn how to adjust essential settings such as server ports, logging options, and dependency injection (DI) behaviors to optimize your app’s startup and runtime.
+
+---
+
+## 1. Understanding the Configuration Touchpoints
+
+Deepkit configuration is a powerful feature that combines type safety, validation, and multiple ways to inject configuration values into your application and modules.
+
+Configuration values can be provided and adjusted through:
+- A **configuration class** (typically defined in `config.ts`) that acts as a schema with default values and validation.
+- **Environment variables** that override class defaults, supporting multiple naming conventions and dotfiles.
+- **Command-line arguments (CLI args)** which interact with your app’s commands.
+
+These mechanisms work together in a prioritized and cascading manner, enabling flexible runtime customization.
+
+<Tip>
+Configuration is centralized through classes. This approach lets you define typed, validated options that integrate seamlessly with dependency injection. Every setting you want to make adjustable should go into a config class.
+</Tip>
+
+---
+
+## 2. Defining Your Configuration Class (`config.ts`)
+
+Start by creating a TypeScript class that encapsulates your app’s configurable options. This class lives in `config.ts` or a similar file. You can specify:
+
+- Property types and optionality
+- Default values
+- Validation constraints using Deepkit's runtime types
+
+### Example:
+
+```typescript
+// config.ts
+import { MinLength } from '@deepkit/type';
+
+export class AppConfig {
+    // Required property, must be at least 2 characters
+    pageTitle!: string & MinLength<2>;
+
+    // Optional property with a default
+    host: string = 'localhost';
+
+    // Debug flag defaulting to false
+    debug: boolean = false;
+
+    // Port with default
+    port: number = 8080;
+}
+```
+
+### Tips:
+- Use `!` to mark required properties without defaults.
+- Use runtime validators to enforce constraints.
+- Always provide defaults where reasonable to simplify overrides.
+
+---
+
+## 3. Applying Configuration to Your App
+
+Pass your configuration class to your app or module during instantiation.
+
+```typescript
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+import { AppConfig } from './config';
+
+const app = new App({
+    config: AppConfig,
+    imports: [new FrameworkModule({ debug: true })],
+});
+
+app.run();
+```
+
+This lets Deepkit sample your configuration options, validate them, and make them injectable throughout.
+
+---
+
+## 4. Overriding Configuration Values
+
+### 4.1 Using `.configure()` in Code
+
+You can override any config option programmatically using `.configure()` on app or module instances.
+
+```typescript
+app.configure({ port: 3000, debug: true });
+```
+
+This method is handy for runtime adjustments or testing setups.
+
+### 4.2 Environment Variables
+
+Deepkit supports loading config from environment variables with optional prefixes and naming strategies.
+
+- By default, Deepkit uppercase converts property names with an optional prefix like `APP_`.
+- For example, to override port, set `APP_PORT=3000` or for a module named `framework`: `APP_FRAMEWORK_PORT=3000`.
+
+```sh
+APP_PORT=3000 ts-node app.ts server:start
+```
+
+You can enable environment loading in your app:
+
+```typescript
+app
+  .loadConfigFromEnv({ prefix: 'APP_' })
+  .run();
+```
+
+### 4.3 JSON Environment Variable
+
+Set multiple options at once with a single JSON environment variable:
+
+```sh
+APP_CONFIG='{"port": 3000, "debug": true}' ts-node app.ts server:start
+```
+
+Load it via:
+
+```typescript
+app.loadConfigFromEnvVariable('APP_CONFIG');
+```
+
+### 4.4 Dotenv Files
+
+Deepkit can load dotenv files to source environment variables for config:
+
+```typescript
+app.loadConfigFromEnv({ envFilePath: ['production.env', '.env'] }).run();
+```
+
+Set any variable in `.env` or your chosen file:
+
+```sh
+APP_PORT=3000
+APP_DEBUG=true
+```
+
+---
+
+## 5. Module-Specific Configuration
+
+Modules can have their own configuration classes and names. When a module has a name set (either default or custom via `.rename()`), you can override module config via environment variables by prefixing with the uppercase module name.
+
+Example for module named `framework`:
+
+```sh
+APP_FRAMEWORK_PORT=9999
+```
+
+Modules receive configuration the same way as the app, allowing granular control.
+
+To rename a module dynamically:
+
+```typescript
+new FrameworkModule().rename('framework2');
+```
+
+Then environment variables become:
+
+```sh
+APP_FRAMEWORK2_PORT=9999
+```
+
+---
+
+## 6. Injecting Configuration Values
+
+Configuration values become injectable dependencies automatically. There are three injection options:
+
+### a) Inject All Configuration Options
+
+Inject the full config class:
+
+```typescript
+import { AppConfig } from './config';
+
+class MyService {
+    constructor(private config: AppConfig) {}
+}
+```
+
+### b) Inject Specific Options (Partial)
+
+Inject only the keys you want via `Pick`:
+
+```typescript
+class MyService {
+    constructor(private config: Pick<AppConfig, 'pageTitle' | 'port'>) {}
+}
+```
+
+### c) Inject Single Option
+
+Inject a single property:
+
+```typescript
+class MyService {
+    constructor(private port: AppConfig['port']) {}
+}
+```
+
+<Tip>
+Preferring partial or single option injection simplifies testing and clarifies the service’s dependencies.
+</Tip>
+
+---
+
+## 7. Configuring CLI Arguments
+
+While configuration classes and environment variables handle most settings, you can pass CLI arguments to your app’s commands which can also receive configuration values and services via dependency injection.
+
+Example CLI command with config injection:
+
+```typescript
+app.command('server:start', async (port: AppConfig['port']) => {
+    console.log(`Starting server on port ${port}`);
+});
+```
+
+You can then override the CLI config via environment or `.configure()`, and the CLI argument will reflect that.
+
+---
+
+## 8. Basic Settings You Can Tune
+
+Here are some common configuration options you will likely want to adjust:
+
+| Setting        | Description                                   | How to Set               |
+|----------------|-----------------------------------------------|-------------------------|
+| `port`         | HTTP server port (usually default 8080)      | config class, env var     |
+| `debug`        | Enable debugging and detailed logging         | config class, env var     |
+| `logStartup`   | Enable startup logs                            | module config via `.configure()` |
+| `workers`      | Number of processes/workers to fork           | module config via env var |
+| `publicDir`    | Path to serve static content                   | Framework module config   |
+
+For `FrameworkModule`, all these options are available and documented in its configuration class.
+
+---
+
+## 9. Step-by-Step: Adjust Configuration Before First Launch
+
+<Steps>
+<Step title="Step 1: Create and export your configuration class">
+Define all your app's configurable options with types and defaults in `config.ts`.
+</Step>
+<Step title="Step 2: Pass your config class to your App">
+In your app bootstrap, pass your config class via the `config` property when instantiating your app.
+</Step>
+<Step title="Step 3: Override config with env or .configure() as needed">
+Choose to override options using environment variables or `.configure()` programmatically.
+</Step>
+<Step title="Step 4: Inject config values into your services">
+In your providers, inject required configuration options via constructor injection.
+</Step>
+<Step title="Step 5: Run your app and verify configuration is applied">
+Start your application and ensure the settings are taking effect as expected, e.g., the correct port is used.
+</Step>
+</Steps>
+
+---
+
+## 10. Troubleshooting Common Configuration Issues
+
+<AccordionGroup title="Common Issues and Solutions">
+<Accordion title="App does not pick up environment variables">
+- Ensure you have called `.loadConfigFromEnv()` or `.loadConfigFromEnvVariable()` before running the app.
+- Check variable prefix and case sensitivity (e.g., `APP_` vs. `app_`).
+- Confirm you are exporting the config class correctly.
+</Accordion>
+<Accordion title="Configuration validation errors on startup">
+- Review error output carefully; Deepkit validates all configuration options.
+- Make sure required values defined with `!` are provided via environment or `.configure()`.
+- Adjust default values or validation types if necessary.
+</Accordion>
+<Accordion title="Injected config values are undefined or default only">
+- Confirm loading order: programmatic `.configure()` calls should happen before service initialization.
+- Use appropriate injection types (full config, partial, or single values).
+</Accordion>
+<Accordion title="Conflicts when importing multiple modules with the same name">
+- Rename modules at creation using `.rename()` to ensure unique module names.
+- Use different environment variable prefixes for each instance.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 11. Next Steps
+
+Now that you understand the configuration basics and can successfully customize your app’s settings:
+
+- Proceed to [Starting and Running Your App](../running-and-validation/starting-the-app) to launch your app with your new configuration.
+- Explore [Creating Your First Deepkit App](../first-app-setup/creating-your-first-app) to build an example app incorporating configuration.
+- Learn more about advanced configuration approaches in the [Configuration](configuration.md) chapter.
+
+---
+
+## References and Further Reading
+
+- [Deepkit App - Configuration](https://deepkit.com/docs/app#configuration)
+- [Environment Configuration and Dotenv Files](../deploying-to-production/environment-configuration)
+- [FrameworkModule Configuration Options](./framework.md)
+- [Dependency Injection - Configuration Injection](../dependency-injection/configuration.md)
+
+---
+
+**You are now equipped to confidently customize your Deepkit application's configuration using the recommended touchpoints, ensuring smooth startup and flexible operation tailored to your needs.**
