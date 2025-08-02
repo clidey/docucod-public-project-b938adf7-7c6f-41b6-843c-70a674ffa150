@@ -3,4 +3,169 @@ title: "Starting and Running Your App"
 description: "Guides users in launching their Deepkit application with the appropriate CLI command, including how to use NPM scripts or direct Node.js invocation. Describes typical console output and cues for recognizing a successful start."
 ---
 
-*This page will automatically be generated from the codebase*
+# Starting and Running Your Deepkit Application
+
+Launching your Deepkit application successfully is a critical first step in making your app live and responsive. This guide walks you through the precise commands, expected outputs, and indicators of a successful start using the Deepkit CLI or direct Node.js invocation.
+
+---
+
+## 1. Prerequisites Before Running
+
+Before you start your application, ensure that:
+
+- You have completed the installation and configuration of your Deepkit Framework app (see Installation and Configuration Basics).
+- Your development environment meets [System Requirements](../prerequisites-installation/system-requirements).
+- Necessary environment variables or configuration files (e.g., `config.ts` or environment `.env` files) are in place.
+- Your project dependencies are installed via your package manager (npm, yarn).
+
+<Tip>
+Verify your application builds and compiles correctly before attempting to start it.
+</Tip>
+
+---
+
+## 2. How to Launch Your Deepkit App
+
+Your Deepkit application is launched primarily via the command line interface using `app.run()`, which can be invoked directly through npm scripts or a direct Node.js call.
+
+### Using NPM Script
+
+If your project is set up with a start script in `package.json`, run:
+
+```bash
+npm run start
+```
+
+This script typically calls the Deepkit CLI commands that boot your app server.
+
+### Running Directly with Node.js
+
+You can launch your app via Node.js by running your compiled JavaScript entry point or by using ts-node for TypeScript:
+
+```bash
+node dist/server/app.js
+# or if working directly with TypeScript source
+npx ts-node src/server/app.ts
+```
+
+### CLI Command Example
+
+Within your source files (commonly `src/server/app.ts`), starting the app looks like this:
+
+```typescript
+import { isMainModule } from '@angular/ssr/node';
+
+const isMain = isMainModule(import.meta.url);
+if (isMain) {
+  void app.run(); // This starts the Deepkit server process
+}
+```
+
+This check ensures the app only starts when directly executed.
+
+---
+
+## 3. Typical Console Output on Startup
+
+When the app successfully starts, your console will display messages similar to:
+
+```
+[INFO] Angular SSR server bootstrap done, using REQUEST_CONTEXT { serverBaseUrl: 'http://localhost:8080', publicBaseUrl: 'http://localhost:8080' }
+[INFO] Deepkit Framework listening at http://localhost:8080
+```
+
+You might also see logs about routing initialization, dependency injection setup, and database migration (if enabled).
+
+### What to Look For
+
+- Confirmation that the Angular SSR server is ready (if applicable).
+- The framework listening on expected ports (commonly 8080 by default).
+- No errors or unhandled exceptions during startup.
+
+<Check>
+A successful start means your app is ready to handle requests at the displayed URLs.
+</Check>
+
+---
+
+## 4. Running Your App Locally: Step-by-Step
+
+Follow these steps to get your app running on your local machine.
+
+<Steps>
+<Step title="Ensure dependencies are installed">
+Run the following to install or verify your dependencies:
+```bash
+npm install
+```
+</Step>
+<Step title="Set up environment variables">
+Make sure any required environment variables or `.env` files are in place. For example, if using OpenAI API keys or database configs, ensure these are configured.
+</Step>
+<Step title="Build your project (if using compilation)">
+Compile TypeScript to JavaScript:
+```bash
+npm run build
+```
+Or use your own build command that outputs to `dist/`.
+</Step>
+<Step title="Start the application">
+Run your app via npm or Node.js:
+```bash
+npm run start
+```
+Or
+```bash
+node dist/server/app.js
+```
+</Step>
+<Step title="Verify the startup logs">
+Look for logs indicating the server has started and is listening, as shown above.
+</Step>
+<Step title="Test your app">
+Open your browser and navigate to the server URL (e.g., `http://localhost:8080`) or use curl commands to hit your API endpoints.
+</Step>
+</Steps>
+
+---
+
+## 5. Common Pitfalls and Troubleshooting
+
+### App Does Not Start or Crashes
+- **Check environment variables:** Missing or invalid configs often cause failures.
+- **Port conflicts:** Ensure no other service occupies your app’s port (commonly 8080).
+- **Compile errors:** Verify TypeScript compilation succeeds without errors.
+- **Permission issues:** Run with sufficient user permissions.
+
+### Slow Startup or Hanging
+- If database connections or external services time out, your app startup may hang. Confirm all external dependencies are reachable.
+
+### Logs Show Errors on SSR Bootstrapping
+- Angular SSR integration requires correct setup; verify your `AngularModule` configuration and that `import.meta.url` is correctly used.
+
+<Tip>
+Use verbose logging temporarily to get deeper insights:
+```bash
+DEBUG=deepkit:* npm run start
+```
+</Tip>
+
+---
+
+## 6. Next Steps After Starting
+
+- Confirm your HTTP, RPC, or CLI endpoints respond using sample requests (see Quick Validation & Hello World guide).
+- Explore further configuration to optimize your startup and server parameters (see Configuration Basics).
+- Consult Troubleshooting Common Issues for resolving runtime errors.
+
+---
+
+## Additional Resources
+
+- [System Requirements](../prerequisites-installation/system-requirements) — Verify your environment readiness.
+- [Configuration Basics](../first-app-setup/configuration-basics) — Customize startup options.
+- [Quick Validation & Hello World](../running-and-validation/quick-validation) — Test your app immediately.
+- [Troubleshooting Common Issues](../../troubleshooting-next-steps/common-issues) — Resolve startup problems.
+- [Deepkit GitHub Repository](https://github.com/deepkit/deepkit-framework) — Review source code and examples.
+
+---
