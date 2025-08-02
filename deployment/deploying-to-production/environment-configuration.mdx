@@ -3,4 +3,252 @@ title: "Environment Configuration"
 description: "Learn how to set up production-appropriate environment variables, secrets, and configuration files for Deepkit apps. Covers using .env files, secure management of secrets, and distinguishing development from production settings."
 ---
 
-*This page will automatically be generated from the codebase*
+# Environment Configuration
+
+Deepkit Framework applications depend heavily on environment-based configuration for flexible, secure, and production-ready deployments. This guide helps you configure your Deepkit app environment appropriately by managing environment variables, secrets, and configuration files such as `.env` files, distinguishing development from production setups.
+
+---
+
+## Why Environment Configuration Matters
+
+Managing your application settings outside of your codebase helps you easily change behavior across different environments without modifying the source. It also allows safe handling of sensitive data, such as passwords and API keys, away from the code repository or container images.
+
+Deepkit's configuration system enables type-safe, flexible, and modular environmental configurations that integrate seamlessly with your application and its modules.
+
+---
+
+## Defining Configuration in Deepkit
+
+At the heart of environment configuration lies your application's configuration class. This class defines the schema of your settings, including validation, defaults, and required fields.
+
+### Example Configuration Class
+
+```typescript
+import { MinLength } from '@deepkit/type';
+
+class AppConfig {
+    pageTitle: string & MinLength<2> = 'Cool site';
+    domain: string = 'example.com';
+    debug: boolean = false;
+}
+```
+
+By defining a class like `AppConfig`, you declare your application's configurable properties along with defaults and validation rules. Deepkit automatically serializes, validates, and injects these configuration values where needed.
+
+---
+
+## Loading Configuration Values
+
+By default, your app uses the default values declared in the configuration class. To override these for production or other environments, you have several powerful options to set or inject configuration values:
+
+### 1. Direct Configuration via `app.configure()`
+
+You can explicitly specify configuration values during application bootstrap:
+
+```typescript
+const app = new App({config: AppConfig});
+app.configure({domain: 'localhost', debug: true});
+app.run();
+```
+
+### 2. Environment Variables Per Option
+
+Deepkit supports loading environment variables where each configuration property corresponds to a single environment variable, typically prefixed with `APP_`. Property names are converted to uppercase with underscores.
+
+For example, to override `pageTitle`:
+
+```bash
+APP_PAGE_TITLE="Other Title"
+```
+
+Corresponding app integration:
+
+```typescript
+new App({ config: AppConfig })
+  .loadConfigFromEnv({prefix: 'APP_'})
+  .run();
+```
+
+This strategy automatically loads `.env` files as well.
+
+### 3. JSON Environment Variable for Bulk Overrides
+
+If you want to override multiple configuration options with a single environment variable, use a JSON-encoded environment variable with `loadConfigFromEnvVariable`:
+
+```bash
+APP_CONFIG='{"pageTitle": "Other title", "debug": true}'
+```
+
+```typescript
+new App({ config: AppConfig })
+  .loadConfigFromEnvVariable('APP_CONFIG')
+  .run();
+```
+
+This is particularly useful for complex nested configurations or module-specific overrides.
+
+### 4. DotEnv Files
+
+Use `.env`-style files to define environment variables that get loaded automatically.
+
+```dotenv
+# .env file
+APP_PAGE_TITLE=Another Title
+APP_DEBUG=true
+```
+
+Load them with:
+
+```typescript
+new App({ config: AppConfig })
+  .loadConfigFromEnv({ envFilePath: ['production.env', '.env'] })
+  .run();
+```
+
+The loader tries each specified file until it finds an existing one.
+
+---
+
+## Module-Specific Configuration
+
+When using modules with their own configuration classes, Deepkit prefixes environment variables by the uppercased module name. For example, if a module named `FrameworkModule` defines a `port` option, it is accessible via:
+
+```bash
+APP_FRAMEWORK_PORT=9999
+```
+
+In JSON environment variables, the module name becomes a nested object:
+
+```bash
+APP_CONFIG='{"framework": {"port": 9999}}'
+```
+
+No prefix is required for the root application module's configuration options.
+
+---
+
+## Accessing Configuration in Code
+
+Deepkit's dependency injection allows effortless access to configuration values in your services, controllers, or providers. You can inject:
+
+- **The Entire Config Object**
+- **A Subset of Config Options**
+- **A Single Config Value**
+
+### Injecting the Whole Config
+
+```typescript
+class MyService {
+  constructor(private config: AppConfig) {}
+
+  getTitle() {
+    return this.config.pageTitle;
+  }
+}
+```
+
+### Injecting Partial Config Using `Pick`
+
+```typescript
+class MyService {
+  constructor(private config: Pick<AppConfig, 'pageTitle' | 'domain'>) {}
+
+  getTitle() {
+    return this.config.pageTitle;
+  }
+}
+```
+
+### Injecting a Single Value
+
+```typescript
+class MyService {
+  constructor(private pageTitle: AppConfig['pageTitle']) {}
+
+  getTitle() {
+    return this.pageTitle;
+  }
+}
+```
+
+Injecting only what you need simplifies unit testing and clarifies dependencies.
+
+---
+
+## Best Practices and Tips for Environment Configuration
+
+- **Prefix environment variables** (default is `APP_`) to avoid clashes.
+- **Use `.env` files for local development and testing.**
+- **Store secrets securely** and avoid committing them to version control.
+- **Validate config schemas** rigorously using Deepkit's built-in type and validation support.
+- **Use JSON environment variables** for complex or nested configuration sets.
+- **Override module configurations individually** using their module-prefixed environment variables.
+
+---
+
+## Common Pitfalls and Troubleshooting
+
+<AccordionGroup title="Troubleshooting Environment Configuration">
+<Accordion title="Configuration Values Are Not Overriding Defaults">
+Make sure environment variables use the correct prefix (default 'APP_') and case (uppercase by default). Check that `.env` files are in the right location, typically alongside your `package.json`.
+</Accordion>
+<Accordion title="Errors Parsing JSON Environment Variables">
+If using JSON environment variables, ensure the JSON is properly quoted and valid. A JSON parsing error will be thrown with details.
+</Accordion>
+<Accordion title="Module Configuration Not Applied">
+Check the module name's case and prefix when using environment variables. Use the module's exact name in uppercase for env vars or the nested object key in JSON.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Summary
+
+Environment configuration in Deepkit Framework empowers you to manage your application settings securely and flexibly across various deployment stages. By defining a configuration class with defaults and validations, you gain a type-safe contract for your settings. Leveraging environment variables, JSON config vars, and dotenv files lets you achieve seamless overrides and secret management. Combined with Deepkit’s powerful dependency injection, environment configuration supports clean, modular, and scalable production deployments.
+
+---
+
+## Additional Resources
+
+- [Configuration Basics Guide](../../getting-started/first-app-setup/configuration-basics)
+- [Dependency Injection Overview](../../guides/core-workflows/dependency-injection-basics)
+- [Module System Guide](../../guides/core-workflows/module-system-guide)
+- [Production Deployment Overview](../../deployment/deploying-to-production/production-deployment-overview)
+- [Troubleshooting Common Issues](../../getting-started/troubleshooting-next-steps/common-issues)
+
+---
+
+## Example: Putting It All Together
+
+```typescript
+import { App } from '@deepkit/app';
+import { MinLength } from '@deepkit/type';
+
+class AppConfig {
+  pageTitle: string & MinLength<2> = 'Default Site';
+  databaseUrl: string = 'mongodb://localhost/mydb';
+  debug: boolean = false;
+}
+
+const app = new App({ config: AppConfig })
+  .loadConfigFromEnv()               // Load settings from env vars and .env
+  .loadConfigFromEnvVariable('APP_CONFIG')  // Load bulk JSON config from env var
+  .run();
+```
+
+```bash
+# .env file
+APP_PAGE_TITLE="My Amazing Site"
+APP_DEBUG=true
+
+# Or set environment variable directly
+APP_CONFIG='{"databaseUrl":"mongodb://prod-db:27017/proddb"}'
+```
+
+This approach guarantees your app reads configuration cleanly from environment sources appropriate to your deployment.
+
+---
+
+## Want to contribute?
+
+Check out the source code and examples on the [Deepkit Framework GitHub repository](https://github.com/deepkit/deepkit-framework).
