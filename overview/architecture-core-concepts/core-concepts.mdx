@@ -3,4 +3,320 @@ title: "Core Concepts & Terminology"
 description: "Master key Deepkit Framework concepts such as modules, dependency injection, controllers, CLI, RPC, runtime types, and real-time messaging. Each concept is succinctly defined, illustrated, and mapped to practical roles in app development."
 ---
 
-*This page will automatically be generated from the codebase*
+# Core Concepts & Terminology
+
+Deepkit Framework brings together a set of essential concepts that empower developers to build scalable, modular, and performant applications. This page introduces you to these core pieces — modules, dependency injection, controllers, CLI commands, RPC, runtime types, and real-time messaging — framing each within practical roles and workflows, so you can deeply understand how to compose and extend your Deepkit applications.
+
+---
+
+## Why Master These Concepts?
+
+When you build with Deepkit Framework, mastering its key abstractions saves you time and effort. Understanding these core concepts directly translates to writing clean, maintainable code that scales smoothly from small demos to large enterprise systems.
+
+You'll learn how modules encapsulate features and dependencies, how services and controllers are wired through the dependency injection system, and how runtime types ensure type-safety and validation across your entire app.
+
+This knowledge forms your foundation for efficient app design, giving you control over CLI commands, HTTP/RPC endpoints, configuration, and event-driven logic.
+
+---
+
+## Modules: The Building Blocks of Your Application
+
+Modules are self-contained units of functionality that organize your application into manageable pieces. Each module has its own:
+
+- Dependency injection container scope
+- Configuration schema
+- Controllers (HTTP, RPC, CLI)
+- Event listeners
+- Services (providers)
+- Middlewares
+
+### What Modules Enable
+
+Modules encapsulate logic and dependencies cleanly but allow you to compose complex systems by importing and exporting modules. This hierarchy enables:
+
+- Clear separation of concerns
+- Easy reusability and packaging
+- Scoped configuration options
+- Controlled sharing of services through exports
+
+### Creating and Using Modules
+
+Modules can be defined either as class-based or functional modules.
+
+```typescript
+import { createModuleClass, AppModule } from '@deepkit/app';
+
+// Class Module
+export class MyModule extends createModuleClass({
+  providers: [MyService],
+  controllers: [MyController],
+  config: MyConfigSchema,
+}) {}
+
+// Functional Module
+export function myFunctionalModule() {
+  return (module: AppModule) => {
+    module.addProvider(MyService);
+    module.addController(MyController);
+  };
+}
+
+// Using modules in your app
+new App({
+  imports: [new MyModule(), myFunctionalModule()],
+}).run();
+```
+
+**Pro tip:** When modules export a service, it becomes available to importing modules, encouraging controlled sharing of functionality.
+
+### Module Lifecycle Hooks
+
+Deepkit allows you to hook into the module lifecycle for dynamic setup:
+
+- `process()`: Modify imports, providers, or config after validation.
+- `processProvider()`: React to added providers.
+- `postProcess()`: Final setup after all modules processed.
+
+Use these to customize behavior based on environment or other modules.
+
+---
+
+## Dependency Injection: Injecting What Your Code Needs
+
+Dependency Injection (DI) is central to Deepkit’s architecture. It lets you build loosely coupled, testable, and maintainable services, controllers, and command handlers.
+
+### What DI Does
+
+DI automatically wires dependencies based on types. When you request a service or controller, its dependencies are resolved and injected.
+
+### How It Works in Deepkit
+
+- Each module has its own DI container, inheriting from parent modules.
+- Providers registered in a module are scoped there unless exported.
+- The root `App` is itself a top-level module.
+
+### Using DI in Practice
+
+```typescript
+class UserService {
+  constructor(private userRepository: UserRepository) {}
+
+  getUsers() {
+    return this.userRepository.findAll();
+  }
+}
+
+new App({
+  providers: [UserService, UserRepository],
+  imports: [new FrameworkModule()],
+});
+
+app.command('list-users', (userService: UserService) => {
+  console.log(userService.getUsers());
+});
+```
+
+All injections happen by simply declaring constructor parameters or function arguments with the desired types.
+
+### Advanced DI Patterns
+
+- Use scopes (`http`, `rpc`, or `cli`) to control lifetime.
+- Export services from modules for sharing.
+- Use `configureProvider()` inside modules for dynamic configuration injection.
+
+<Note>
+Make sure to understand provider encapsulation and exports to avoid dependency conflicts.
+</Note>
+
+---
+
+## Controllers: Handling Your Application Endpoints and Commands
+
+Controllers are classes or functions that handle application inputs:
+
+- **HTTP Controllers**: Define HTTP endpoints with decorators from `@deepkit/http`.
+- **RPC Controllers**: Define RPC services responding to remote procedure calls.
+- **CLI Controllers**: Define command-line commands with structured arguments.
+
+### Benefits
+
+- Automatic route or command registration
+- Dependency injection of services directly into controllers
+- Organized, reusable endpoint logic
+
+### Example: HTTP Controller
+
+```typescript
+import { http } from '@deepkit/http';
+
+class GreetingController {
+  @http.GET('/hello')
+  hello() {
+    return 'Hello World!';
+  }
+}
+
+new App({
+  controllers: [GreetingController],
+  imports: [new FrameworkModule()],
+}).run();
+```
+
+### Example: CLI Command
+
+```typescript
+import { cli, Command } from '@deepkit/app';
+
+@cli.controller('greet')
+class GreetCommand implements Command {
+  async execute(name: string = 'world') {
+    console.log(`Hello ${name}!`);
+  }
+}
+
+new App({
+  controllers: [GreetCommand],
+  imports: [new FrameworkModule()],
+}).run();
+```
+
+---
+
+## Runtime Types: The Foundation of Type Safety and Validation
+
+Deepkit's runtime type system bridges static TypeScript types with runtime validation, serialization, and reflection.
+
+### What You Get
+
+- Automatic deserialization and validation of incoming data
+- Type information accessible at runtime for DI and serialization
+- Support for classes, primitives, enums, unions, and complex structures
+
+### Usage Scenario
+
+When you define service methods, CLI commands, or controllers, Deepkit uses runtime types to:
+
+- Validate inputs
+- Inject configuration values
+- Deserialize JSON payloads 
+
+### Example
+
+```typescript
+import { RuntimeType } from '@deepkit/type';
+
+class User {
+  username!: string;
+  age?: number;
+}
+
+// Used automatically as parameter type in controller or command
+```
+
+---
+
+## Real-Time Messaging and Event System
+
+Deepkit Framework includes a powerful event system based on event tokens and listeners.
+
+### What It Enables
+
+- Components seamlessly communicate through events
+- Decoupled design patterns (publish/subscribe)
+- Hooks into the app lifecycle, server startup/shutdown, commands, and custom events
+
+### Event Tokens and Listeners
+
+Events are identified by unique tokens. Listeners can be:
+
+- Simple callback functions (functional listeners)
+- Class methods decorated to listen on events
+
+Both support dependency injection.
+
+### Example
+
+```typescript
+import { App, onAppExecute } from '@deepkit/app';
+
+new App()
+  .listen(onAppExecute, (event) => {
+    console.log('Command starting...');
+  })
+  .run();
+```
+
+### Use in Modules
+
+Register event listeners in modules for modular extensibility.
+
+---
+
+## How These Concepts Fit Together
+
+In a typical Deepkit app:
+
+1. You structure features and services with **Modules**.
+2. Use **Dependency Injection** to wire services and controllers efficiently.
+3. Define **Controllers** to expose HTTP endpoints, RPC services, or CLI commands.
+4. Apply **Runtime Types** to ensure type-safe inputs and configs.
+5. Employ the **Event System** to react to app lifecycle or user-defined events.
+
+This design leads to clean, testable, and maintainable applications.
+
+---
+
+## Getting Started with Core Concepts
+
+If you are starting fresh, here is a suggested path:
+
+<Steps>
+<Step title="Learn Modules">
+Understand how to create and import modules to organize your app features.
+</Step>
+<Step title="Use Dependency Injection">
+Register providers and inject them in controllers and commands.
+</Step>
+<Step title="Write Controllers">
+Start creating HTTP, RPC, or CLI controllers for your application's entry points.
+</Step>
+<Step title="Leverage Runtime Types">
+Use runtime types to validate inputs and reliably inject configuration.
+</Step>
+<Step title="React with Events">
+Explore event tokens and listeners to respond to app lifecycle or custom signals.
+</Step>
+</Steps>
+
+---
+
+## Troubleshooting Common Issues
+
+<AccordionGroup title="Common Pitfalls in Core Concepts">
+<Accordion title="Module exports not working">
+If a service is not available in a parent module after import, confirm that you have added it to the `exports` array of the providing module. Providers are encapsulated by default.
+</Accordion>
+<Accordion title="Dependency Injection errors">
+Make sure your service or controller class is registered as a provider and that its dependencies are also provided somewhere in the module hierarchy.
+</Accordion>
+<Accordion title="Invalid configuration errors">
+Validate your module configuration classes and loading mechanisms. Use the framework debugger or CLI commands (`app:config`) to inspect loaded configuration.
+</Accordion>
+<Accordion title="Event listeners not triggered">
+Verify listener registration and that you listen to the correct event token. Class listeners require decorators and are instantiated by the DI system.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Reference Links
+
+- [Modules & How To Use Them](../app/modules.md)
+- [Dependency Injection Overview](../dependency-injection/getting-started.md)
+- [Event System Guide](../app/events.md)
+- [Runtime Types Basics](../runtime-types/runtime-types.md)
+- [Framework Module Description](./framework.md)
+
+---
+
+By mastering these core concepts, you gain full control over Deepkit Framework’s powerful features—from organizing your app logically, injecting dependencies cleanly, to creating extensible event-driven systems—all with strong type safety at runtime.
