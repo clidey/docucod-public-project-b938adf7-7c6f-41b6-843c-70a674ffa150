@@ -3,4 +3,271 @@ title: "Data Validation & Schemas"
 description: "Dive into schema-first validation: how Deepkit checks data structures at runtime, maps validation errors, and integrates error reporting into every layer—from input validation to RPC boundaries and HTTP layers."
 ---
 
-*This page will automatically be generated from the codebase*
+# Data Validation & Schemas
+
+Dive into schema-first validation: how Deepkit checks data structures at runtime, maps validation errors, and integrates error reporting into every layer—from input validation to RPC boundaries and HTTP layers.
+
+---
+
+## Introduction to Validation
+
+Validation is the systematic process of verifying data for accuracy, type correctness, and adherence to constraints before processing. It is especially critical when handling data from unknown or untrusted origins, such as user inputs, HTTP requests, or CLI arguments.
+
+Deepkit Framework takes validation seriously by offering a runtime type system that ensures your data matches TypeScript types exactly, including rich constraints beyond simple type checks. Avoid unsafe type casts and rely on Deepkit's runtime validation for secure and robust applications.
+
+<Info>
+Validation is not just about types but also about content constraints such as string lengths, numeric ranges, patterns, and custom rules. Deepkit's system integrates validation with controlled error reporting to empower developers to catch and handle invalid data early and clearly.
+</Info>
+
+## Core Functions for Validation
+
+Deepkit provides three key functions for validation purposes:
+
+- `validate<T>(data)`: Returns an array of validation errors if any exist, or an empty array if data is valid.
+- `is<T>(data)`: Acts as a type guard, returning a boolean indicating validity.
+- `assert<T>(data)`: Throws a validation error if the data does not conform to the type.
+
+```typescript
+import { validate, is, assert } from '@deepkit/type';
+
+const errors = validate<string>('abc'); // []
+const invalidErrors = validate<string>(123); // [{ code: 'type', message: 'Not a string', path: '' }]
+
+if (is<string>(value)) {
+    // value is guaranteed to be string
+}
+
+function doSomething(value: any) {
+    assert<string>(value); // throws if value is invalid
+    // value is guaranteed string now
+}
+```
+
+### Handling Complex and Recursive Types
+
+Validation works deeply for structured and nested types, providing detailed error paths for easier debugging.
+
+```typescript
+interface User {
+    id: number;
+    username: string;
+    supervisor?: User;
+}
+
+validate<User>({ id: 1, username: 'Joe' }); // []
+
+validate<User>({ id: 1, username: 'Joe', supervisor: {} });
+// [
+//   { path: 'supervisor.id', code: 'type', message: 'Not a number' },
+//   { path: 'supervisor.username', code: 'type', message: 'Not a string' }
+// ]
+```
+
+You can also leverage TypeScript utilities to build reusable and more specific variants of types.
+
+```typescript
+type UserWithoutId = Omit<User, 'id'>;
+validate<UserWithoutId>({ username: 'Joe' }); // valid!
+```
+
+<Note>
+Deepkit is unique in providing runtime access to TypeScript types for validation and serialization without code duplication or external schema definitions.
+</Note>
+
+## Why Avoid Type Casts for Validation?
+
+Type casts like `value as string` do not validate data at runtime; they simply tell TypeScript to treat the data as a type without guarantees. This can lead to crashes or vulnerabilities.
+
+```typescript
+const username = data.username as string;
+if (username.startsWith('@')) { // may crash if username is not a string
+}
+```
+
+Using Deepkit's `is` or `assert` functions ensure runtime validation and type safety.
+
+## Defining Custom Type Guards and Using `is`
+
+Manual type guards are tedious and error-prone. Deepkit's `is<T>` function auto-generates robust guards for any TypeScript type.
+
+```typescript
+import { is } from '@deepkit/type';
+
+if (is<User>(data)) {
+    // data is guaranteed User
+}
+```
+
+## Detailed Error Reporting
+
+The `validate` function returns structured error objects containing:
+
+- `path`: property path where failure occurred
+- `code`: error code key for localization/translation
+- `message`: human-readable explanation
+
+```typescript
+interface ValidationErrorItem {
+    path: string;
+    code: string;
+    message: string;
+}
+```
+
+Example:
+
+```typescript
+validate<string>(123);
+// [{ path: '', code: 'type', message: 'Not a string' }]
+```
+
+Errors for objects point precisely to problematic properties:
+
+```typescript
+validate<User>({ id: 1 });
+// [{ path: 'username', code: 'type', message: 'Not a string' }]
+```
+
+## Adding Constraints Through Type Annotations
+
+Deepkit augments TypeScript types with *type annotations* that impose constraints like minimum lengths, numeric ranges, patterns, and more.
+
+You define constraints as intersections using `&`.
+
+```typescript
+import { MinLength, Pattern } from '@deepkit/type';
+
+type Username = string & MinLength<3>;
+
+is<Username>('ab'); // false
+is<Username>('Joe'); // true
+
+interface User {
+    id: number;
+    username: Username;
+}
+
+is<User>({ id: 1, username: 'ab' }); // false
+```
+
+The `validate` function returns errors with specific codes such as `minLength`, facilitating form validation and error display.
+
+```typescript
+validate<Username>('xb');
+// [{ code: 'minLength', message: 'Min length is 3', path: '' }]
+```
+
+## Common Constraint Types
+
+Deepkit provides many built-in validation constraints that can be added easily:
+
+- **String constraints:**
+  - `MinLength<n>`, `MaxLength<n>`, `Pattern<RegExp>`, `Alpha`, `Alphanumeric`, `Ascii`
+- **Number constraints:**
+  - `Minimum<n>`, `Maximum<n>`, `ExclusiveMinimum<n>`, `ExclusiveMaximum<n>`, `Positive`, `Negative`, `MultipleOf<n>`
+- **Special value constraints:**
+  - `Email` (email pattern), `BeforeNow`, `AfterNow` (date checks)
+
+### Examples
+
+```typescript
+import { Email, MinLength, Maximum, Positive } from '@deepkit/type';
+
+type UserEmail = string & Email;
+
+type Age = number & Positive & Maximum<100>;
+
+is<UserEmail>('joe@example.com'); // true
+is<UserEmail>('abc'); // false
+
+is<Age>(25); // true
+is<Age>(-1); // false
+```
+
+## Creating Custom Validators
+
+You can define custom validation functions to impose business or domain-specific rules.
+
+```typescript
+import { ValidatorError, Validate } from '@deepkit/type';
+
+function titleValidation(value: string) {
+    if (value.trim().length < 5) {
+        return new ValidatorError('tooShort', 'Value is too short');
+    }
+}
+
+type ArticleTitle = string & Validate<typeof titleValidation>;
+
+interface Article {
+    id: number;
+    title: ArticleTitle;
+}
+
+validate<Article>({ id: 1, title: 'Hi' });
+// [{ path: 'title', code: 'tooShort', message: 'Value is too short' }]
+```
+
+**Note:** Custom validators run after built-in validations; failures stop further validators for efficiency.
+
+## Validation Workflow in User Scenarios
+
+1. **Input Reception:** Data arrives from HTTP body, query parameters, CLI args, or RPC calls.
+2. **Type Validation:** Data is automatically or manually validated using `validate` or `assert`.
+3. **Error Mapping:** Validation errors are reported with precise paths and codes.
+4. **Handling:** Errors may be converted to HTTP error responses or user feedback.
+5. **Safe Processing:** Validated data proceeds through the system with guarantees of type safety.
+
+<Tip>
+Always validate data from unknown sources before processing to avoid runtime errors and security holes. Deepkit's validation system automates and simplifies this vital step.
+</Tip>
+
+## Integrating Validation Into Layers
+
+Deepkit integrates validation automatically in many places:
+
+- **HTTP Controllers:** Validates request parameters and bodies.
+- **RPC Methods:** Ensures payloads meet contract expectations.
+- **CLI Arguments:** Enforces type and value correctness on input args.
+- **Database Layer:** Validates entities before persistence.
+
+This layered integration ensures data integrity throughout your application stack.
+
+## Troubleshooting Common Validation Issues
+
+### 1. Unexpected Validation Failures
+
+- Check that your type annotations (constraints) match the expected data.
+- Ensure runtime type reflection is enabled and configured properly (see Runtime Types docs).
+
+### 2. Misleading Empty Errors
+
+- Validate the whole structure passed to `validate`, not just partial objects.
+- Use `assert` to catch issues early during development.
+
+### 3. Performance Concerns
+
+- Deepkit validation is optimized; however, avoid redundant validations.
+- Use `is` for simple guards when only boolean validity is needed.
+
+## Best Practices
+
+- Define types and constraints centrally and reuse across app layers.
+- Avoid type casts for user or external inputs; always validate.
+- Use error `code` to localize or display consistent user messages.
+- Leverage Deepkit's rich type system to cover complex structures.
+- Write custom validators only when built-ins are insufficient.
+
+---
+
+## Additional Resources
+
+- [Deepkit Runtime Types & Reflection](runtime-types.md)
+- [Validation Constraint Types](validation.md#constraints)
+- [Working with RPC Controllers](../api-reference/core-controllers/rpc-controllers.md)
+- [HTTP Controllers & Input Validation](../api-reference/core-controllers/http-controllers.md)
+- [CLI Commands & Argument Validation](../api-reference/core-controllers/cli-controllers.md)
+
+---
+
+This page equips you with the knowledge to confidently validate your data at all levels of Deepkit applications, enabling robust, secure, and maintainable software.
