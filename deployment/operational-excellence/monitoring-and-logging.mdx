@@ -3,4 +3,222 @@ title: "Monitoring and Logging"
 description: "How to instrument Deepkit applications for effective monitoring and log management. Explains integrating logging frameworks, production log outputs, and choosing the right log destinations. Covers exposure of health endpoints and tips for integration with external monitoring tools."
 ---
 
-*This page will automatically be generated from the codebase*
+# Monitoring and Logging
+
+Effective monitoring and logging are foundational to operating Deepkit applications with confidence, speed, and reliability. This guide walks you through the essential steps of instrumenting your Deepkit application to capture insightful logs, integrate with monitoring systems, and expose helpful health endpoints—empowering you to maintain optimal availability and diagnose issues with precision.
+
+---
+
+## Why Monitor and Log in Deepkit?
+
+Deepkit Framework provides built-in logging and event mechanisms seamlessly integrated with its modular architecture and dependency injection system. Proper monitoring and logging allow you to:
+
+- Track application health and availability in production
+- Trace request flows to diagnose issues or errors
+- Understand system performance and bottlenecks
+- Integrate with external log aggregation and monitoring tools
+
+By leveraging Deepkit’s structured logging and standardized events, you gain actionable insights while maintaining high developer productivity.
+
+---
+
+## Logging in Deepkit Applications
+
+### Built-In Logging Framework
+
+Deepkit ships with a powerful, flexible logging system based on the `@deepkit/logger` package:
+
+- Supports multiple transports (console, files, custom implementations)
+- Scoped loggers for contextual information
+- Structured, leveled logging to control verbosity
+- Easily injectable via Dependency Injection in any service or controller
+
+### How to Integrate Logging
+
+To capture logs in your Deepkit application, inject the `Logger` service or create scoped loggers:
+
+```typescript
+import { Logger } from '@deepkit/logger';
+
+class MyService {
+  constructor(protected logger: Logger) {}
+
+  run() {
+    this.logger.log('Service started');
+  }
+}
+```
+
+The `Logger` instance automatically collects and outputs logs to the configured transports.
+
+### HTTP Request Logging
+
+If you enable the `httpLog` option in the `FrameworkModule` configuration, Deepkit automatically logs incoming HTTP requests with details such as IP address, method, URL, status code, and referer:
+
+```typescript
+new FrameworkModule({
+  httpLog: true,
+});
+```
+
+Under the hood, this hooks into the HTTP lifecycle via listeners, emitting entries like:
+
+```
+127.0.0.1 - GET "/api/items" 200 "https://example.com"
+```
+
+This built-in logger is crucial for tracking user activities and debugging HTTP interactions.
+
+### Best Practices for Logging
+
+- Use appropriate log levels (debug, info, warn, error) to control verbosity
+- Leverage scoped loggers to include contextual tags (e.g., request ID, service name)
+- Avoid logging sensitive information unless strictly necessary and masked
+- Consider JSON log format for easier integration with centralized logging systems
+
+---
+
+## Log Destinations and Management
+
+### Console and File Transports
+
+Deepkit includes the `ConsoleTransport` transport by default, which outputs logs to the console. For production, consider configuring file transports or external services:
+
+```typescript
+import { Logger, FileTransport } from '@deepkit/logger';
+
+const logger = new Logger([new FileTransport('/var/log/myapp.log')]);
+```
+
+You can add multiple transports concurrently for redundancy and flexibility.
+
+### Integrating Log Aggregators
+
+To achieve observability at scale, integrate with centralized log management systems like:
+
+- ELK Stack (Elasticsearch, Logstash, Kibana)
+- Grafana Loki
+- Datadog
+- Splunk
+
+Use Deepkit’s flexible logger interface to create custom transports sending logs over HTTP or TCP to these services.
+
+### Structured Logging for Metrics and Traces
+
+To build advanced monitoring, instrument your logs with structured fields such as request IDs, latency metrics, and error codes. These details facilitate aggregation and alerting.
+
+---
+
+## Monitoring Your Deepkit Application
+
+### Health and Metrics Endpoints
+
+Expose HTTP endpoints providing vital health and metrics data:
+
+- **Health Check Endpoint**: Responds with 200 OK if the app is operational.
+- **Metrics Endpoint**: Provides application metrics (request rates, error counts, latency histograms)
+
+You can implement these endpoints with your HTTP controllers or use middleware that Deepkit supports.
+
+### Instrumentation Points
+
+Deepkit's event-driven architecture allows you to hook into lifecycle events to collect monitoring data:
+
+- Server bootstrap and shutdown events
+- HTTP request and response lifecycle
+- RPC call start and completion
+- Database query execution
+
+By listening to these events, monitor uptime, latency, throughput, and failure rates.
+
+### Example: Basic Health Endpoint
+
+```typescript
+import { http } from '@deepkit/http';
+
+@http.controller('/_health')
+class HealthController {
+  @http.GET('/')
+  healthCheck() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+}
+```
+
+Register this controller in your application to have a lightweight, publicly accessible health check endpoint.
+
+---
+
+## Exposing Logs and Integrating External Monitoring
+
+### Forwarding Logs
+
+Forward logs from Deepkit to your existing platform by creating custom Logger transports:
+
+```typescript
+class ElasticSearchTransport {
+  log(entry: LogEntry) {
+    // Format and send the log entry to Elasticsearch
+  }
+}
+```
+
+Register your transport with Deepkit’s `Logger` to capture and ship logs automatically.
+
+### Monitoring via Metrics Aggregators
+
+Combine logging with metrics collection for full observability by exposing Prometheus metrics using OpenMetrics or integrating with APM tools.
+
+Consider exporting metrics such as:
+
+- Request counts, status codes
+- Average and percentile latencies
+- Resource utilization
+
+Use external libraries or middleware to enable this.
+
+---
+
+## Common Pitfalls and Troubleshooting
+
+<AccordionGroup title="Common Issues in Monitoring and Logging">
+<Accordion title="Logs Not Appearing in Production">
+Ensure your logger levels are set to include the desired log verbosity (e.g., set to `info` or `debug` as appropriate). Also verify that transports are correctly configured and have write permissions for file logs.
+</Accordion>
+<Accordion title="Missing HTTP Request Logs">
+Confirm that `httpLog` is enabled in the FrameworkModule configuration. Also ensure HTTP listeners are registered properly and the request lifecycle is not short-circuited by middleware.
+</Accordion>
+<Accordion title="Health Endpoint Returns Errors">
+Check that any services or dependencies queried in the health endpoint are correctly initialized and accessible. Use try/catch blocks to prevent the endpoint from crashing.
+</Accordion>
+<Accordion title="Integration with External Aggregators Not Working">
+Verify network configurations, authentication credentials, and API endpoints of your external monitoring setup. Use local log files as an alternative for troubleshooting transport issues.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Summary
+
+Instrumenting Deepkit applications for monitoring and logging unlocks critical insights into your system’s behavior and health. Deepkit’s modular logging framework, integrated HTTP request logging, and event-driven monitoring hooks make it straightforward to implement robust observability. By exposing health endpoints and forwarding structured logs to external platforms, you maintain proactive control over your production environment.
+
+---
+
+## Additional Resources
+
+- [Deepkit Framework Module Overview](../overview/introduction-and-value/product-intro.md)
+- [Application Server and Events](../overview/architecture-core-concepts/core-concepts.md#events)
+- [HTTP Controllers & Endpoints](../../api-reference/core-controllers/http-controllers.md)
+- [Event System Documentation](../../app/events.md)
+- [Production Deployment Overview](../deploying-to-production/production-deployment-overview.md)
+
+---
+
+## Next Steps
+
+- Implement logging to files or centralized sinks suited to your operational environment.
+- Add dedicated health and metrics endpoints for orchestration systems like Kubernetes.
+- Explore Deepkit events to add custom performance tracing or alerting.
+- Integrate with your preferred monitoring pipelines for end-to-end observability.
+
+By following this guide, you will ensure your Deepkit applications are production-ready with rich monitoring and logging capabilities, helping you deliver reliable, maintainable software.
