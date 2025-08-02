@@ -3,4 +3,205 @@ title: "Troubleshooting Common Issues"
 description: "Lists the most frequent installation and launch problems—such as missing dependencies, port conflicts, or unsupported Node.js versions—paired with straightforward remedies and command references for rapid resolution."
 ---
 
-*This page will automatically be generated from the codebase*
+# Troubleshooting Common Issues
+
+This guide focuses on resolving the most frequent problems encountered during the installation and initial launch of Deepkit applications, particularly issues related to missing dependencies, port conflicts, unsupported Node.js versions, and other common runtime errors. Each section provides clear, actionable instructions and commands to help you quickly identify and fix these problems, ensuring a smooth onboarding experience.
+
+---
+
+## 1. Missing or Incorrect Dependencies
+
+### Symptoms
+- Errors indicating packages such as `@deepkit/core`, `@deepkit/injector`, or `@deepkit/type` cannot be found.
+- Runtime errors or compilation failures due to missing modules.
+
+### How to Fix
+1. Ensure you have installed all required Deepkit packages correctly.
+
+```bash
+npm install @deepkit/core @deepkit/injector @deepkit/type
+```
+
+2. Verify that your project’s `package.json` lists these packages as dependencies.
+3. If you are using the Deepkit Framework, run:
+
+```bash
+npm install @deepkit/framework
+```
+
+4. Delete `node_modules` and reinstall to reset corrupted installations:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+5. Check that your TypeScript compiler options allow emitting runtime type metadata, which Deepkit depends on. Your `tsconfig.json` should include:
+
+```json
+{
+  "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strict": true
+  }
+}
+```
+
+<Tip>
+Make sure to restart your development server or IDE after installation changes to avoid stale module caches.
+</Tip>
+
+---
+
+## 2. Port Conflicts When Starting Your App
+
+### Symptoms
+- Startup failure with error messages like `EADDRINUSE: address already in use`.
+- The app’s console output indicates it cannot bind to the configured port.
+
+### How to Fix
+1. Identify the process using the port (commonly port 3000 or configured value):
+
+```bash
+# On Linux/macOS
+lsof -i :3000
+
+# On Windows (PowerShell)
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess
+```
+
+2. Stop or kill the process that occupies the port:
+
+```bash
+kill -9 <PID>
+```
+
+3. Alternatively, change the port number in your app configuration (for example, in `config.ts` or environment variables).
+
+```typescript
+// config.ts example
+export const config = {
+  port: 4000,
+};
+```
+
+4. Restart your application.
+
+<Note>
+Adjust port numbers consistently if you have multiple Deepkit applications running locally to prevent conflicts.
+</Note>
+
+---
+
+## 3. Unsupported Node.js Version
+
+### Symptoms
+- Errors citing unsupported Node.js versions or warnings about incompatibility.
+- Unexpected failures during app start or dependency installation.
+
+### How to Fix
+1. Verify your current Node.js version:
+
+```bash
+node -v
+```
+
+2. Deepkit Framework supports Node.js versions >= 16.x.x. If using an older version, upgrade Node.js.
+
+3. Download the latest LTS version from [https://nodejs.org/](https://nodejs.org/).
+
+4. If you manage multiple versions, consider using `nvm` (Node Version Manager):
+
+```bash
+nvm install --lts
+nvm use --lts
+```
+
+<Tip>
+Consistently use the same Node.js version across your team to avoid version-related discrepancies.
+</Tip>
+
+---
+
+## 4. Circular Dependency Errors
+
+### Symptoms
+- Runtime errors mentioning "circular dependency".
+- Injector fails to create service instances.
+
+### How to Fix
+1. Review your service and provider dependencies for loops where ServiceA depends on ServiceB, which in turn depends on ServiceA.
+2. Refactor your code to break the circular reference, possibly by:
+   - Using property injection instead of constructor injection for one side.
+   - Introducing an interface or abstraction to decouple implementations.
+3. Use Deepkit’s error stack to pinpoint the cycle path.
+
+<Info>
+Deepkit’s injector detects circular dependencies at runtime and will clearly list them in errors for easier debugging.
+</Info>
+
+---
+
+## 5. Scope-Related Provider Not Found Errors
+
+### Symptoms
+- Error messages like `Service 'XYZ' is known but is not available in scope 'http'.`
+- Occurs when requesting a scoped service without creating or setting the correct scope.
+
+### How to Fix
+1. Ensure the provider is declared with the correct scope, e.g., `'http'`, `'rpc'`, or custom scope.
+
+```typescript
+{ provide: UserSession, scope: 'http' }
+```
+
+2. When requesting a scoped provider, create and use a scoped injector context:
+
+```typescript
+const injector = InjectorContext.forProviders([...]);
+const httpScope = injector.createChildScope('http');
+const session = httpScope.get(UserSession);
+```
+
+3. For request lifecycles, ensure you set context objects in the scope, such as HttpRequest or HttpResponse.
+
+---
+
+## 6. Configuration Injection Failures
+
+### Symptoms
+- Errors about missing configuration values or properties.
+- Provider setup fails or throws during startup.
+
+### How to Fix
+1. Verify your configuration classes and providers are correctly registered in modules.
+2. Make sure configuration schema validation passes before app startup.
+3. Use environment variables or CLI arguments to override default configuration values appropriately.
+4. Check that any dependency on config properties uses runtime types for validation.
+
+<Tip>
+Refer to the [Configuration Basics](getting-started/first-app-setup/configuration-basics) guide for detailed setup procedures.
+</Tip>
+
+---
+
+## 7. General Debugging Tips
+
+- Always read the full error stack in the console output; Deepkit provides detailed messages.
+- Use explicit provider declarations if automatic resolution is unclear.
+- Restart your app after changing configuration or environment settings.
+- Enable verbose logging or debugging flags during development.
+
+---
+
+## Additional Resources and Support
+
+- [Getting Started with Configuration Basics](getting-started/first-app-setup/configuration-basics)
+- [Starting and Running Your App](getting-started/running-and-validation/starting-the-app)
+- [Dependency Injection Concepts](website/src/pages/documentation/dependency-injection.md)
+- For questions or bugs, open an issue on the [Deepkit GitHub Repository](https://github.com/deepkit/deepkit-framework)
+
+<Tip>
+Engage with the Deepkit community on GitHub Discussions or join the official chat channels to get real-time advice.
+</Tip>
