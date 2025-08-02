@@ -3,4 +3,282 @@ title: "Data Validation & Type Safety"
 description: "Apply Deepkit’s runtime type system and validators to ensure robust data flows. This guide explains decorators, schema definitions, and how to handle validation errors from user input or external systems."
 ---
 
-*This page will automatically be generated from the codebase*
+# Data Validation & Type Safety
+
+Deepkit’s runtime type system provides comprehensive tools for applying **data validation** and enforcing **type safety** directly at runtime. This guide helps you use decorators to define validation schemas, apply built-in or custom validators, and handle validation errors seamlessly. By ensuring robust validation and type checking, you safeguard your applications from unexpected data errors and security vulnerabilities.
+
+---
+
+## 1. Understanding the Role of Data Validation
+
+Deepkit enables precise runtime validation that goes beyond simple type checking. It verifies both the shape _and_ the content of data against complex TypeScript types, including additional constraints known as _type annotations_. This capability is critical when handling data from uncertain or external sources like HTTP requests, CLI arguments, or messaging queues.
+
+Validation with Deepkit not only checks base data types but also validates nuanced constraints such as string patterns, numerical ranges, and date boundaries. This reduces bugs and prevents invalid data from flowing through your system.
+
+---
+
+## 2. Defining Validation Schemas with Decorators
+
+### Using Type Decorators
+The `@t` decorator namespace from `@deepkit/type` allows you to mark class properties with types and validators:
+
+```typescript
+import { t, ValidatorError } from '@deepkit/type';
+
+class User {
+  @t.validator
+  validateName(): ValidatorError | undefined {
+    if (!this.name || this.name.length < 3) {
+      return new ValidatorError('tooShort', 'Name must be at least 3 characters long');
+    }
+  }
+
+  @t.string.minLength(3) name!: string;
+}
+```
+
+Here you see two options:
+- **Built-in annotations** like `.minLength(3)` on types,
+- **Custom validator methods** decorated with `@t.validator` that run additional checks.
+
+### Adding Built-In Constraints
+Annotations that enforce constraints are applied via type intersections with specialized types:
+
+```typescript
+import { MinLength, MaxLength, Pattern, Positive, Email } from '@deepkit/type';
+
+type Username = string & MinLength<3> & MaxLength<16>;
+
+type EmailAddress = string & Email;
+
+type PositiveInt = number & Positive;
+```
+
+Apply these annotations in interfaces or class properties to automatically enforce constraints during validation.
+
+### Common Built-In Validators
+Deepkit offers many built-in validators for strings, numbers, dates, and arrays:
+
+| Validator      | Usage Description                         |
+|----------------|------------------------------------------|
+| `Pattern`      | Regex pattern matching for strings       |
+| `MinLength`    | Minimum length for strings or arrays     |
+| `MaxLength`    | Maximum length for strings or arrays     |
+| `Positive`     | Number must be positive (optional zero)  |
+| `Negative`     | Number must be negative (optional zero)  |
+| `BeforeNow`    | Date must be in the past                  |
+| `AfterNow`     | Date must be in the future                |
+| `Includes`     | Array or string must include a value     |
+| `Excludes`     | Array or string must exclude a value     |
+
+---
+
+## 3. Validating Data at Runtime
+
+### Using the `validate` Function
+
+The primary function to check data is `validate<T>(data)` which returns an array of errors or an empty array if validation passes.
+
+```typescript
+import { validate } from '@deepkit/type';
+
+interface User {
+  id: number;
+  username: string & MinLength<3>;
+}
+
+const errors = validate<User>({ id: 1, username: 'Jo' });
+if (errors.length) {
+  console.log('Validation failed:', errors);
+}
+```
+
+Each error describes the failure with:
+- The **path** (e.g. `username` or nested like `supervisor.id`),
+- The **error code** (e.g. `minLength`),
+- A human-readable **message**.
+
+### Using Type Guards: `is` and `assert`
+- `is<T>(data)` returns a boolean indicating if the data is valid.
+- `assert<T>(data)` throws a detailed ValidationError on invalid data.
+
+Example:
+
+```typescript
+import { is, assert } from '@deepkit/type';
+
+if (is<User>(someData)) {
+  // someData is now safely typed as User
+}
+
+// Throws if invalid
+assert<User>(someData);
+```
+
+### Handling Validation Errors
+Validation errors come as instances of `ValidationErrorItem` with detailed path info and messages. This allows easy integration with UI forms or logging systems.
+
+---
+
+## 4. Custom Validation
+
+If built-in validators do not cover your case, implement custom validation methods.
+
+### Declaring a Custom Validator Method
+
+```typescript
+import { t, ValidatorError } from '@deepkit/type';
+
+class Product {
+  @t.string
+  name!: string;
+
+  @t.validator
+  validateName(): ValidatorError | undefined {
+    if (this.name && !this.name.startsWith('Valid')) {
+      return new ValidatorError('startsWith', 'Name must start with "Valid"');
+    }
+  }
+}
+```
+
+Custom validators run after all built-in validation, and if any validator fails, further validation for that property is skipped.
+
+### Generic Validators
+You can write validators that accept configurable options using the `Validate` annotation and pass options to make them reusable:
+
+```typescript
+import { ValidatorError, Validate } from '@deepkit/type';
+
+function startsWith(chars: string) {
+  return (value: any) => {
+    if (typeof value !== 'string' || !value.startsWith(chars)) {
+      return new ValidatorError('startsWith', `Does not start with ${chars}`);
+    }
+  };
+}
+
+type CustomString = string & Validate<typeof startsWith, 'abc'>;
+```
+
+---
+
+## 5. Best Practices & Common Pitfalls
+
+- **Always prefer validation and type guards over raw type casts.** Type casts are compile-time only and unsafe at runtime.
+- **Place constraints as close to types as possible,** via annotations or decorators, to ensure consistent validation.
+- **Use the built-in validators wherever possible** to take advantage of Deepkit's optimized and tested validation logic.
+- **Write custom validators when you have domain-specific logic** that cannot be expressed as generic constraints.
+- **Be aware that validation may be recursive and paths will describe nested properties.** Use this to your advantage in error reporting.
+
+<Tip>
+Deepkit performs validation automatically in many components like HTTP controllers and RPC actions when you declare parameter types properly. This reduces manual validation boilerplate.
+</Tip>
+
+---
+
+## 6. Advanced Notes on Validation Implementation
+
+Deepkit’s validation infrastructure:
+
+- Integrates with the Deepkit serializer and runtime type system to parse and enforce types.
+- Utilizes a registry of **type guards** and **validator templates** that execute sequential checks.
+- Supports **progressive validation**, which stops further validations on a type once one fails, improving performance.
+- Provides **detailed error contexts** including property path and error code to enable clear diagnostics.
+
+### Validation Workflow (Simplified)
+
+1. Deepkit resolves the full runtime type using reflection.
+2. Validation templates for the type kind run, checking primitive or complex types.
+3. Built-in and custom validators execute with the data.
+4. Any errors are collected and reported.
+
+This process is fully configurable and extendable.
+
+---
+
+## 7. Practical Example: Validating User Input in an HTTP Controller
+
+```typescript
+import { t, validate, ValidationError } from '@deepkit/type';
+import { controller, POST, Body } from '@deepkit/http';
+
+class LoginRequest {
+  @t.string.minLength(3) username!: string;
+  @t.string.minLength(8) password!: string;
+}
+
+@controller('/auth')
+class AuthController {
+  @POST('/login')
+  async login(@Body() data: any) {
+    const errors = validate<LoginRequest>(data);
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+
+    // Now data is guaranteed valid
+    return { success: true };
+  }
+}
+```
+
+This example demonstrates how to immediately enforce validation and provide clear error responses when user input does not match expected types and constraints.
+
+---
+
+## 8. Summary
+
+By applying Deepkit's data validation and type safety tools, you benefit from:
+- **Automatic and detailed validation across all data layers.**
+- **Built-in and custom constraints you can annotate alongside your types.**
+- **Runtime type safety avoiding common pitfalls of unsafe casts.**
+- **Easy to integrate, human-readable error reporting for debugging and UI feedback.**
+
+Unlock the full power of Deepkit's runtime type system by embracing validation today to build resilient and secure applications.
+
+---
+
+## See Also
+
+- [Validation Concepts (Validation.md)](/website/src/pages/documentation/runtime-types/validation.md)
+- [Runtime Types Overview](website/src/pages/documentation/runtime-types.md)
+- [`@deepkit/type` Runtime Types](website/src/pages/library/type.md)
+- [Creating RPC Controllers with Validation](/guides/getting-started/quickstart-cli-http-rpc)
+
+---
+
+## Troubleshooting Tips
+
+<AccordionGroup title="Validation Troubleshooting Common Issues">
+<Accordion title="Data Not Validating As Expected">
+- Verify that the correct type argument is passed to `validate<T>()`.
+- Check that constraints and validators are applied to the type properties or decorators properly.
+- Confirm no conflicting or missing decorators on properties.
+</Accordion>
+<Accordion title="Custom Validator Not Running">
+- Ensure the method is decorated with `@t.validator`.
+- Custom validators run after built-in validators; if built-in fails, custom may be skipped.
+</Accordion>
+<Accordion title="Unexpected Validation Error Paths">
+- Errors include dot-separated property paths to the failing value.
+- Nested objects cause paths like `supervisor.username`.
+- Use paths to map errors back to UI fields accurately.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Additional Tips
+
+<Tip>
+Use Deepkit’s `validateFunction<T>()` to generate reusable validators, ideal for repeated validations in large codebases.
+</Tip>
+
+<Tip>
+When working with large or nested data structures, validation maintains performance by short-circuiting on first failure per node.
+</Tip>
+
+<Tip>
+Combine multiple constraints for complex validations, like `string & MinLength<3> & Pattern<RegExp>` for precise string content control.
+</Tip>
