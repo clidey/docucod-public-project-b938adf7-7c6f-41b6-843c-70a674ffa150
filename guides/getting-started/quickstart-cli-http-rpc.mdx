@@ -3,4 +3,319 @@ title: "Quickstart: CLI, HTTP, and RPC Controllers"
 description: "A step-by-step guide to defining and using CLI, HTTP, and RPC controllers in your application—covering typical use cases, wiring, and how to expose business logic through various interfaces."
 ---
 
-*This page will automatically be generated from the codebase*
+# Quickstart: CLI, HTTP, and RPC Controllers
+
+This guide provides a practical, step-by-step walkthrough for defining and using CLI, HTTP, and RPC controllers in your Deepkit application. You will learn how to expose your business logic through command-line interfaces, web endpoints, and remote procedure calls seamlessly using Deepkit's unified architecture.
+
+---
+
+## 1. Overview
+
+### What This Guide Helps You Accomplish
+- Define and register CLI commands to interact with your app via terminal.
+- Create HTTP controllers and routes for RESTful API endpoints.
+- Implement RPC controllers for fast, type-safe remote procedure calls.
+- Wire business logic once and expose it through all three interfaces.
+
+### Prerequisites
+- A working Deepkit project set up with `@deepkit/app` and `@deepkit/framework`.
+- Basic familiarity with TypeScript syntax.
+- Environment configured with TypeScript `experimentalDecorators` enabled.
+- Your app entrypoint (`app.ts`) ready to register controllers.
+
+### Expected Outcome
+By the end, you will have a simple application exposing the same "Hello World" functionality via CLI, HTTP, and RPC, demonstrating how to structure and wire your controllers.
+
+### Time Estimate
+Approximately 15-30 minutes to follow along and get hands-on with all three controller types.
+
+### Difficulty Level
+Beginner to Intermediate.
+
+---
+
+## 2. Defining Controllers Step-by-Step
+
+Deepkit organizes application logic in controllers which are exposed through different protocols: CLI commands, HTTP endpoints, and RPC actions. Each controller type has its own decorator and registration pattern.
+
+### 2.1 Creating a CLI Controller
+
+CLI controllers define commands executable in terminals. You create a class with an `execute` method or use functional declarations.
+
+<Steps>
+<Step title="Create a CLI Controller Class">
+Define a class with the `@cli.controller('command-name')` decorator and an `execute` method.
+
+```typescript
+import { cli } from '@deepkit/app';
+
+@cli.controller('hello')
+class HelloWorldControllerCli {
+  async execute(name: string = 'World'): Promise<void> {
+    console.log(`Hello ${name}!`);
+  }
+}
+```
+
+Test it by adding the controller to your app and running:
+
+```sh
+$ ./app.ts hello Peter
+# Output: Hello Peter!
+```
+</Step>
+
+<Step title="Or Use a Functional CLI Command">
+You can also define commands as functions directly when creating your app.
+
+```typescript
+import { App } from '@deepkit/app';
+
+new App()
+  .command('hello', (name: string = 'World') => {
+    console.log(`Hello ${name}!`);
+  })
+  .run();
+```
+</Step>
+</Steps>
+
+<Check>
+CLI arguments and flags are automatically derived from method parameters and their types.
+</Check>
+
+### 2.2 Creating an HTTP Controller
+
+HTTP controllers respond to RESTful web requests. Use the `@http` decorators to define routes and HTTP verbs.
+
+<Steps>
+<Step title="Define an HTTP Controller Class">
+
+Create a class and decorate its methods with HTTP verbs specifying routes:
+
+```typescript
+import { http } from '@deepkit/http';
+
+class HelloWorldControllerHttp {
+  @http.GET('/hello/:name')
+  hello(name: string): string {
+    return `Hello ${name}!`;
+  }
+}
+```
+
+Add the controller to your app’s controllers array.
+
+</Step>
+
+<Step title="Start the HTTP Server">
+Use the built-in command `server:start` or run your app entrypoint with this command to start the HTTP server.
+
+```sh
+$ npm run app server:start
+```
+
+Then access:
+
+```sh
+$ curl http://localhost:8080/hello/Peter
+Hello Peter!
+```
+</Step>
+</Steps>
+
+<Note>
+You can customize HTTP ports via environment variables `APP_FRAMEWORK_PORT` and `APP_FRAMEWORK_HOST`.
+</Note>
+
+### 2.3 Creating an RPC Controller
+
+RPC controllers expose methods callable remotely with full serialization and validation.
+
+<Steps>
+<Step title="Create an RPC Controller Class">
+
+Use the `@rpc.controller` and `@rpc.action` decorators:
+
+```typescript
+import { rpc } from '@deepkit/rpc';
+
+@rpc.controller('/main')
+class HelloWorldControllerRpc {
+  @rpc.action()
+  hello(name: string): string {
+    return 'Hello ' + name;
+  }
+}
+```
+
+Register this controller in your app.
+
+</Step>
+
+<Step title="Consume the RPC Controller">
+From the client side, use Deepkit RPC client to call your controller methods:
+
+```typescript
+import { RpcWebSocketClient } from '@deepkit/rpc';
+
+async function main() {
+  const client = new RpcWebSocketClient('http://localhost:8080');
+  const ctrl = client.controller<HelloWorldControllerRpc>('/main');
+
+  const result = await ctrl.hello('World');
+  console.log(result);  // Prints 'Hello World'
+
+  client.disconnect();
+}
+
+main();
+```
+</Step>
+</Steps>
+
+---
+
+## 3. Wiring Controllers in Your Application
+
+Your `app.ts` acts as the core entrypoint where controllers are registered and the app is run.
+
+```typescript
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+import { HelloWorldControllerCli } from './src/controller/hello-world.cli';
+import { HelloWorldControllerHttp } from './src/controller/hello-world.http';
+import { HelloWorldControllerRpc } from './src/controller/hello-world.rpc';
+
+new App({
+  controllers: [
+    HelloWorldControllerCli,
+    HelloWorldControllerHttp,
+    HelloWorldControllerRpc,
+  ],
+  imports: [new FrameworkModule({ debug: true })],
+})
+  .run();
+```
+
+Starting this app with `npm run app server:start` runs all controllers together, letting you interact via CLI, HTTP, and RPC methods.
+
+---
+
+## 4. Best Practices & Tips
+
+- **Single Business Logic Source:** Put your core logic inside services that all controllers inject to avoid dead code and inconsistencies.
+- **Parameter Validation:** Leverage Deepkit's runtime types to ensure arguments are validated automatically in all controllers.
+- **Naming Conventions:** Use distinctive names for commands and controller paths to avoid conflicts.
+- **Environment Management:** Always specify environment-specific configs, especially when switching servers or ports.
+- **Debugging:** Enable debug mode in `FrameworkModule` during development to access detailed logs and the Framework Debugger at `/_debug/`.
+
+<Tip>
+Using shared service classes injected in constructors keeps your controllers thin and your business logic reusable across CLI, HTTP, and RPC.
+</Tip>
+
+---
+
+## 5. Troubleshooting Common Issues
+
+<AccordionGroup title="Common Issues and Solutions">
+<Accordion title="CLI Command Does Not Run">
+- Verify the command name matches the registered controller name.
+- Check if you included the controller in your App's `controllers` array.
+- Confirm the TypeScript `experimentalDecorators` is enabled in your `tsconfig.json`.
+</Accordion>
+<Accordion title="HTTP Server Not Starting">
+- Ensure your `server:start` command is invoked correctly.
+- Check for port conflicts and change port with `APP_FRAMEWORK_PORT` if necessary.
+- Confirm network accessibility for the specified host.
+</Accordion>
+<Accordion title="RPC Client Connection Fails">
+- Verify the server is running and listening on correct port.
+- Match controller path strings exactly between client and server.
+- Check websocket or HTTP endpoint availability.
+- Enable debug logs on the server for errors.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 6. Next Steps & Related Resources
+
+- [Creating Your First Deepkit App](https://docs.deepkit.com/guides/getting-started/create-new-app) — start with minimal apps
+- [Understanding Project Structure](https://docs.deepkit.com/guides/getting-started/understanding-structure)
+- [CLI Getting Started Guide](https://docs.deepkit.com/cli/getting-started)
+- [Deepkit RPC Documentation](https://docs.deepkit.com/library/rpc)
+- [HTTP Controllers & Endpoints API](https://docs.deepkit.com/api-reference/core-controllers/http-controllers)
+- [Troubleshooting Common Issues](https://docs.deepkit.com/getting-started/troubleshooting-next-steps/common-issues)
+
+---
+
+This guide empowers you to rapidly expose your application’s functionality through flexible interfaces—CLI, HTTP, and RPC—leveraging Deepkit’s strongly-typed, modular design for maintainable, extensible, and performant apps.
+
+---
+
+## Appendix: Minimal Example
+
+```typescript
+// src/controller/hello-world.cli.ts
+import { cli } from '@deepkit/app';
+
+@cli.controller('hello')
+export class HelloWorldControllerCli {
+  async execute(name: string = 'World') {
+    console.log(`Hello ${name}!`);
+  }
+}
+
+// src/controller/hello-world.http.ts
+import { http } from '@deepkit/http';
+
+export class HelloWorldControllerHttp {
+  @http.GET('/hello/:name')
+  hello(name: string): string {
+    return `Hello ${name}!`;
+  }
+}
+
+// src/controller/hello-world.rpc.ts
+import { rpc } from '@deepkit/rpc';
+
+@rpc.controller('/main')
+export class HelloWorldControllerRpc {
+  @rpc.action()
+  hello(name: string): string {
+    return `Hello ${name}!`;
+  }
+}
+
+// app.ts
+import { App } from '@deepkit/app';
+import { FrameworkModule } from '@deepkit/framework';
+import { HelloWorldControllerCli } from './src/controller/hello-world.cli';
+import { HelloWorldControllerHttp } from './src/controller/hello-world.http';
+import { HelloWorldControllerRpc } from './src/controller/hello-world.rpc';
+
+new App({
+  controllers: [
+    HelloWorldControllerCli,
+    HelloWorldControllerHttp,
+    HelloWorldControllerRpc,
+  ],
+  imports: [new FrameworkModule({ debug: true })],
+})
+  .run();
+```
+
+Run the server:
+
+```sh
+npm run app server:start
+```
+
+Access:
+
+- CLI: `./app.ts hello Peter`
+- HTTP: `curl http://localhost:8080/hello/Peter`
+- RPC: Use a Deepkit RPC client connecting to `/main` and call `hello('Peter')`
+
+---
