@@ -3,4 +3,224 @@ title: "Solving Data Validation & Type Issues"
 description: "Guidance for resolving common type validation, serialization, and schema mismatch errors, especially when working with Deepkit's runtime types and validators."
 ---
 
-*This page will automatically be generated from the codebase*
+# Solving Data Validation & Type Issues
+
+This page guides you through common challenges related to data validation, type mismatches, and serialization when working with Deepkit's runtime types and validators. By understanding typical pitfalls and how Deepkit's powerful runtime type system operates, you can resolve errors efficiently and ensure robust, secure applications.
+
+---
+
+## Frequently Asked Questions
+
+### What causes type validation errors in Deepkit?
+Type validation errors occur when data at runtime does not conform to the expected TypeScript types or additional validation constraints defined via type annotations. This often happens when data comes from untrusted or external sources such as HTTP requests, JSON input, or databases where the shape or content of the data might be unpredictable.
+
+### How can I safely validate complex TypeScript types at runtime?
+Deepkit provides the `validate()`, `is()`, and `assert()` functions to validate complex runtime data against TypeScript types, including interfaces, classes, generics, and mapped types. These functions use Deepkit’s runtime type system, which extracts type information during compilation to ensure thorough and precise validation.
+
+- `validate<T>(data)` returns an array of validation errors, empty if the data is valid.
+- `is<T>(data)` returns a boolean indicating validity.
+- `assert<T>(data)` throws if the data is invalid, ensuring type safety.
+
+### Why are type casts unsafe and how can Deepkit help?
+Simply casting a value with `as` does not guarantee runtime safety because it provides no real checking. For example, casting a number as a string won't convert the value, leading to runtime errors if the data is invalid.
+
+Deepkit's type guards (`is`) and assertions (`assert`) perform actual validation at runtime, guaranteeing data integrity before use.
+
+### How do I interpret validation error reports?
+The `validate` function returns detailed error items with three important fields:
+
+- **path**: The location of the invalid value within the object, using dot notation for deep properties.
+- **code**: A lower-case string identifying the type of validation failure (e.g., `type`, `minLength`).
+- **message**: A descriptive error message for display or logging.
+
+This structured error information allows pinpointing fails in complex nested types.
+
+### How can I add custom validation rules?
+You can define custom validator functions and apply them using the `Validate` annotation. These functions return a `ValidatorError` when validation fails. Custom validators run after built-in checks and only execute if previous validations pass.
+
+Example:
+```typescript
+import { ValidatorError, Validate } from '@deepkit/type';
+
+function startsWithA(value: string) {
+  if (!value.startsWith('A')) {
+    return new ValidatorError('startsWithA', 'Value must start with A');
+  }
+}
+
+type MyString = string & Validate<typeof startsWithA>;
+
+// Validation will fail if string does not start with 'A'
+```
+
+### How do validation constraints improve type checks?
+Deepkit supports type annotations like `MinLength`, `Maximum`, `Pattern`, and others that enforce constraints beyond simple type checks.
+
+For example:
+```typescript
+type Username = string & MinLength<3> & Pattern</* regex */>;
+```
+These constraints automatically tie into Deepkit’s validation functions and produce specific error messages.
+
+### Can I use Deepkit to validate data coming from APIs or databases?
+Yes. Deepkit’s `cast` function converts plain input data from external sources into typesafe, validated instances matching your TypeScript types. Combined with validation, this ensures your app never operates on invalid or malformed data.
+
+---
+
+## Common Issues & How to Solve Them
+
+### 1. Receiving Unexpected Data Types
+**Symptom:** Validation errors such as `Not a number`, `Not an object`, or `Not a string`.
+
+**Cause:** Data shape or type differs from your declared TypeScript type (e.g., `undefined`, `null`, string instead of number).
+
+**Solution:**
+- Use Deepkit’s `cast<T>(data)` to transform input into the expected type.
+- Validate input with `assert<T>(data)` before usage.
+- Define constraints to reject invalid formats at validation time.
+- Avoid direct type assertions like `as number` on untrusted data.
+
+
+### 2. Validation Fails on Nested Objects
+**Symptom:** Errors report paths like `supervisor.id` or `address.city` with type mismatches.
+
+**Cause:** Nested objects are missing required fields or contain wrong types.
+
+**Solution:**
+- Use Deepkit’s recursive validation support which reports exact paths.
+- Define nested types clearly using interfaces or classes.
+- Validate the entire object graph with `validate<T>(obj)`.
+- Consider optional fields with precise annotations.
+
+
+### 3. Type Guard Functions Are Tedious to Write Manually
+**Symptom:** Writing verbose `isType()` functions prone to errors.
+
+**Cause:** Manual type guards do not scale well with complex types.
+
+**Solution:**
+- Use Deepkit’s automatic `is<T>(data)` function which generates correct type guards.
+- Use `assert<T>(data)` for guaranteed runtime checks without manual guards.
+
+
+### 4. Validation Errors on Custom Constraints
+**Symptom:** Errors like `Min length is 3`, `Pattern does not match`, or `Number needs to be positive`.
+
+**Cause:** Input fails to meet custom type annotations or validation rules.
+
+**Solution:**
+- Add meaningful validation annotations such as `MinLength`, `Pattern`, `Positive`. 
+- Inspect error codes to provide specific feedback in your UI.
+- Use custom validators for business-specific rules.
+
+
+### 5. Serialization and Deserialization Mismatches
+**Symptom:** Data not properly converted across JSON or DB boundaries, causing validation failures.
+
+**Cause:** Missing or inconsistent serializers/deserializers leading to malformed data.
+
+**Solution:**
+- Use Deepkit’s `serialize()` and `cast()` consistently.
+- Define custom serializers if needed.
+- Use `MapName` or naming strategies to handle property name conversions.
+
+
+### 6. Incorrect Handling of Dates, UUIDs, and Special Types
+**Symptom:** Validation fails because a value is a string but expected to be a Date or UUID.
+
+**Cause:** Deepkit expects specific runtime types for these, and validation requires them to match or transform accordingly.
+
+**Solution:**
+- Use Deepkit’s runtime support for Date and UUID types.
+- Ensure incoming data is deserialized into correct types using `cast()`.
+- Avoid naive string-to-Date casts.
+
+---
+
+## Best Practices for Effective Validation
+
+- **Always validate external inputs.** Never trust raw data without running through `validate()` or `assert()`.
+- **Prefer `assert<T>(data)` in critical paths.** This throws early and guarantees data safety.
+- **Use TypeScript utility types** (like `Omit`, `Pick`) to create reusable partial or subset types for validation when necessary.
+- **Leverage Deepkit’s type annotations** to specify constraints close to the type definition.
+- **Use Deepkit’s automatic type guards (`is()`)** rather than manual implementation.
+- **Adopt consistent serialization/deserialization pipelines** (`serialize()`/`cast()`), maintaining type fidelity across boundaries.
+- **Provide detailed error feedback.** Use `validate()`’s error objects to enhance user experience in forms and APIs.
+
+---
+
+## Troubleshooting Steps When You Encounter Validation Errors
+
+<Steps>
+<Step title="Check the Source Data">
+Ensure the data coming into your system matches the expected type shape. Log or inspect the raw input for anomalies.
+</Step>
+<Step title="Use `validate<T>()` to Analyze Errors">
+Run `validate<T>(data)` and examine returned error objects to understand where and why validation fails.
+</Step>
+<Step title="Avoid Unsafe Type Casts">
+Replace all unsafe `as` casts with `assert<T>(data)` or conditionally safe `is<T>(data)` checks.
+</Step>
+<Step title="Add or Adjust Type Annotations">
+Strengthen your type definitions with constraints if inputs are more strict, or loosen them if necessary.
+</Step>
+<Step title="Apply Serialization and Casting Correctly">
+Use `serialize()` before sending data and `cast()` when receiving it, preserving type integrity.
+</Step>
+<Step title="Write Custom Validators if Needed">
+For business logic or unique data validation not covered by built-in types or constraints, write custom validator functions.
+</Step>
+<Step title="Run Integration Tests"
+Repeat validation in automated tests to catch issues early and maintain data consistency.
+</Step>
+</Steps>
+
+---
+
+## Real-World Scenario: Validating User Input in an HTTP Endpoint
+
+Imagine building an HTTP POST endpoint to create users, where the client submits JSON.
+
+```typescript
+import { assert, MinLength } from '@deepkit/type';
+
+interface User {
+  username: string & MinLength<3>;
+  email: string & Email;
+  age?: number & Positive;
+}
+
+app.post('/users', (request) => {
+  const data = request.body;
+  assert<User>(data); // throws if invalid
+
+  // safe to use 'data' with assurance.
+  createUser(data);
+});
+```
+
+If a user submits `{ "username": "ab", "email": "invalid" }`, `assert` throws detailing that `username` does not meet minimum length and the email format is invalid. This prevents unsafe code execution and informs you precisely what needs fixing.
+
+---
+
+## Additional Resources and Related Documentation
+
+- [Runtime Types Overview](runtime-types.md): Understand Deepkit's runtime type system foundations.
+- [Validation Constraints & Custom Validators](runtime-types/validation.md): Comprehensive guide on validation with examples.
+- [Serialization & Transformation Guide](serialization-and-transformation.md): Handling data format conversions safely.
+- [Deepkit Runtime Types API](library/type.md): Explore functions like `validate()`, `cast()`, `is()`, and annotations.
+- [Core Concepts & Architecture](../overview/architecture-core-concepts/core-concepts.md): Broader context of how validation fits in Deepkit.
+- [HTTP Controllers & Endpoints](api-reference/core-controllers/http-controllers.md): For integrating validation with HTTP routes.
+
+---
+
+<Tip>
+Validation and serialization are the cornerstone of secure and scalable applications. Deepkit's runtime types empower you to fully leverage your existing TypeScript types at runtime, cutting down errors and improving developer productivity.
+</Tip>
+
+<Warning>
+Avoid using simple type casts like `as` on untrusted data. Always validate to avoid runtime crashes or security flaws.
+</Warning>
+
+## Summary
+This page equips you to identify, understand, and resolve data validation and type-related errors using Deepkit’s runtime types and validators. By integrating the recommended best practices and leveraging Deepkit’s rich validation features, you will build more robust, reliable, and secure applications.
