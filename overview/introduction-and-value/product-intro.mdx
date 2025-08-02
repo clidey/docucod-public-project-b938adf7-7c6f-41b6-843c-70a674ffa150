@@ -3,4 +3,176 @@ title: "What is Deepkit Framework?"
 description: "Discover Deepkit Framework – a high-performance, real-time TypeScript framework that unifies standalone libraries and a modular architecture. Learn why it exists, the problems it solves, and how it boosts productivity for TypeScript application development."
 ---
 
-*This page will automatically be generated from the codebase*
+# What is Deepkit Framework?
+
+## Unlocking the Potential of Enterprise TypeScript Development
+
+Deepkit Framework is a cutting-edge, high-performance Node.js framework written entirely in TypeScript. It provides a unified, modular ecosystem that brings together a powerful set of reusable TypeScript libraries seamlessly integrated to accelerate the development of enterprise-scale web applications.
+
+Built for developers seeking to harness the full power of TypeScript on both front-end and back-end, Deepkit Framework enables you to share code such as models, validations, and business logic across your entire stack, creating a truly end-to-end typed environment.
+
+### Why Deepkit Framework Matters
+
+- **Streamlined Full-Stack Development:** Write your front-end and back-end code using one language and type system for a more consistent and efficient workflow.
+- **Unified Tools for the Whole Stack:** From HTTP routing to ORM, RPC, validation, and templating, integrated libraries work together perfectly.
+- **Enterprise-Grade Performance:** Designed from the ground up with high performance and scalability in mind.
+- **Runtime Type Safety:** Real-time validation and serialization powered by TypeScript types ensures fewer errors and rapid development.
+- **Modular Architecture:** Use libraries individually or as a combined framework tailored to your specific needs.
+
+### Who Should Use Deepkit Framework?
+
+- Enterprise teams building scalable, type-safe web applications
+- Developers looking to unify backend and frontend development with TypeScript
+- Teams prioritizing runtime validation, dependency injection, and modular code
+- Architects seeking a robust framework optimized for performance and developer productivity
+
+---
+
+## Introducing Deepkit Framework
+
+### What is Deepkit Framework?
+
+At its core, Deepkit Framework is a Node.js backend framework designed specifically for TypeScript development at scale. Unlike traditional frameworks that might use a loosely typed approach or separate technologies for client and server, Deepkit fully leverages TypeScript’s capabilities to create a robust, real-time application development platform.
+
+It is not just a framework but a collection of standalone reusable libraries unified by a modular framework, empowering developers to build web apps that are fast, maintainable, and reliable.
+
+### The Problem Deepkit Solves
+
+Developers often face challenges such as:
+
+- Fragmented toolchains where front-end and back-end languages or type systems differ
+- Redundant code for validation, serialization, and schema definitions across layers
+- Poor runtime validation and inconsistent data handling causing bugs and security issues
+- Complex boilerplates and slow iteration caused by disconnected technologies
+
+Deepkit Framework addresses these challenges by offering a comprehensive, type-safe environment where your TypeScript code is your single source of truth across API, database, transport, and frontend layers.
+
+### How Deepkit Framework Works
+
+Deepkit Framework organizes your application with a modular architecture, enabling you to compose functionality from dedicated libraries:
+
+- ORM layer for working with relational and NoSQL databases using enterprise patterns
+- Runtime type system for validation and serialization driven by TypeScript types
+- HTTP routing and API development with automatic parameter deserialization and validation
+- Dependency Injection container optimized for TypeScript
+- Command Line Interface (CLI) integration
+- Remote Procedure Call (RPC) support with WebSocket and TCP transport
+- JSX-based high-performance template engine
+
+Everything is designed to integrate naturally, allowing you to focus on delivering business value rather than infrastructure.
+
+---
+
+## Core Features & Capabilities
+
+### 1. Runtime Types & Validation
+Deepkit extends TypeScript’s type system into runtime allowing:
+- Accurate data validation and serialization matching your TypeScript models
+- Use of complex types, generics, unions, and intersections without compromise
+- Reduced errors from mismatched data across frontend, backend, and transport layers
+
+### 2. High-Performance ORM
+- Support for MySQL, PostgreSQL, SQLite, and MongoDB
+- Enterprise design patterns like Data Mapper, Identity Map, and Unit of Work
+- Migration support and relations
+- No separate code generation needed
+
+### 3. HTTP Router & Controllers
+- Define HTTP routes via TypeScript classes or standalone functions
+- Automatic routing parameter parsing and type-safe validation
+- Seamless integration with Dependency Injection
+
+### 4. Dependency Injection Container
+- Auto-wiring services, listeners, controllers, and commands
+- Support for constructor and parameter injection
+- Enables clean separation of concerns
+
+### 5. Remote Procedure Call (RPC)
+- Fast, typesafe bi-directional communication
+- Supports WebSocket and TCP transports
+- No code generation needed
+- Streaming capabilities via RxJS
+
+### 6. Command Line Interface (CLI)
+- Define and organize commands with full validation
+- Dependency Injection supported in commands too
+
+### 7. Template Engine
+- JSX-based templates compiled to optimized JavaScript
+- Runtime injection of services
+- Asynchronous component support
+
+---
+
+## Why Should You Care?
+
+### Real-World Advantages
+Imagine developing an enterprise application where:
+- Your data models are defined once in TypeScript and immediately usable everywhere — frontend, backend, API, and database
+- Validation errors are caught instantly before they propagate
+- Refactoring type-safe code is faster and less error-prone
+- APIs instantly expose full documentation and developers can explore/test them interactively
+
+The result is dramatic savings in development time, improved application quality, and reduced maintenance costs.
+
+### Use Cases
+
+- Large enterprise SaaS platforms requiring strong validation and robust APIs
+- Distributed microservice architectures needing fast and typesafe RPC communication
+- Teams aiming to share logic seamlessly across the stack
+- Developers building real-time applications with complex domain logic
+
+### Before & After Deepkit
+| Without Deepkit   | With Deepkit                         |
+| ----------------- | ---------------------------------- |
+| Multiple disconnected libraries and typesystems | Unified TypeScript framework with seamless library integration |
+| Repeated validation and serialization code    | One source of truth with runtime type safety          |
+| Complex integration & boilerplate               | Out-of-the-box HTTP, RPC, CLI, ORM, DI support         |
+
+---
+
+## Getting Started Preview
+
+Getting started with Deepkit Framework involves:
+
+- Installing the framework using `npm init @deepkit/app my-deepkit-app`
+- Defining your first TypeScript-based HTTP or RPC controller
+- Using integrated CLI commands
+- Exploring built-in runtime types for validation
+
+No complex setup or configuration is required to jumpstart your enterprise-grade application.
+
+For detailed quick start instructions, see [Creating Your First Deepkit App](/getting-started/first-app-setup/creating-your-first-app).
+
+---
+
+## Practical Tips & Best Practices
+
+- **Define your types once:** Centralize your TypeScript models including validation rules and reuse throughout your full stack.
+- **Leverage Dependency Injection:** Architect services and controllers as injectable classes for cleaner code and easier testing.
+- **Use RPC for real-time needs:** Benefit from Deepkit’s high-performance RPC when low latency communication is required.
+- **Validate early:** Use Deepkit’s runtime types to catch invalid inputs before business logic runs.
+
+### Common Pitfalls
+
+- Overlooking modularity can lead to tightly coupled code; always define clear boundaries using Deepkit’s module system.
+- Avoid manually duplicating validation logic outside Deepkit’s runtime types.
+
+---
+
+Explore more in our documentation to fully leverage Deepkit Framework’s power for your TypeScript enterprise applications.
+
+---
+
+## Related Documentation
+
+- [Why Choose Deepkit?](/overview/introduction-and-value/value-prop)
+- [Core Concepts & Terminology](/overview/architecture-core-concepts/core-concepts)
+- [Getting Started: Creating Your First Deepkit App](/getting-started/first-app-setup/creating-your-first-app)
+- [Runtime Types & Validation](/concepts/data-modeling-and-validation/runtime-types-and-reflection)
+- [Dependency Injection Basics](/guides/core-workflows/dependency-injection-basics)
+
+---
+
+For source and contribution, visit the repository:
+https://github.com/deepkit/deepkit-framework
