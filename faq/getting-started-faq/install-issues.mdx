@@ -3,4 +3,223 @@ title: "Installation and Setup Issues"
 description: "Resolve typical problems with installing Deepkit and its libraries, such as dependency errors, project scaffolding challenges, and NPM issues. Learn to troubleshoot and validate successful installations."
 ---
 
-*This page will automatically be generated from the codebase*
+# Installation and Setup Issues
+
+Resolve typical problems with installing Deepkit and its libraries, such as dependency errors, project scaffolding challenges, and NPM issues. Learn to troubleshoot and validate successful installations to get your Deepkit application up and running smoothly.
+
+---
+
+## Common Installation Challenges
+
+### 1. Dependency Errors and Peer Dependencies
+
+Deepkit relies on several core dependencies such as TypeScript, `ts-node`, and Deepkit packages including `@deepkit/app`, `@deepkit/type`, and `@deepkit/type-compiler`. Missing or mismatched versions can cause installation failures or runtime errors.
+
+#### How to Avoid:
+- Use NPM 7+ which handles peer dependencies automatically.
+- Verify you have installed all required packages:
+
+```bash
+npm install typescript ts-node @deepkit/app @deepkit/type @deepkit/type-compiler
+```
+
+- Run the Deepkit type compiler installation command:
+
+```bash
+./node_modules/.bin/deepkit-type-install
+```
+
+This installs Deepkit’s type compiler into your TypeScript package.
+
+#### Troubleshooting Tips:
+- Check your `node_modules` and `package-lock.json` to ensure all packages are installed.
+- Run `npm install` again after manual changes to dependencies.
+- Confirm your Node.js version meets [the system requirements](../getting-started/prerequisites-installation/system-requirements.md).
+
+### 2. Project Structure and Configuration Issues
+
+Deepkit requires only minimal project setup:
+
+```
+.
+├── app.ts
+├── node_modules
+├── package-lock.json
+└── tsconfig.json
+```
+
+- Make sure your `tsconfig.json` enables experimental decorators and reflection.
+- Enable Deepkit’s type compiler with the `reflection` flag:
+
+```json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "strict": true,
+    "module": "CommonJS",
+    "target": "es2020"
+  },
+  "reflection": true,
+  "files": ["app.ts"]
+}
+```
+
+### 3. Running the Application
+
+You can run your app using `ts-node`:
+
+```bash
+./node_modules/.bin/ts-node app.ts
+```
+
+If you encounter errors:
+- Verify `ts-node` is installed.
+- Check for TypeScript compilation errors or missing imports.
+- Confirm the entry point `app.ts` exists and exports the necessary commands.
+
+## Troubleshooting Typical Issues
+
+### Problem: Commands Not Found or Not Showing
+
+- Ensure you declared your commands correctly in the `app.ts` or controller files.
+- Commands added via `app.command()` or CLI controllers must be registered before running.
+- Use the `run()` method to start the app and display available commands.
+
+Example minimal command:
+
+```typescript
+import { App } from '@deepkit/app';
+
+const app = new App();
+
+app.command('test', () => {
+  console.log('Hello World');
+});
+
+app.run();
+```
+
+Run and test with:
+
+```bash
+./node_modules/.bin/ts-node app.ts test
+```
+
+### Problem: TypeScript Reflection Missing or Failing
+
+- Confirm your `tsconfig.json` has the `reflection: true` top-level option.
+- Run `deepkit-type-install` after installing dependencies.
+- Reflection is required for dependency injection and argument parsing.
+
+### Problem: Peer Dependency Warnings
+
+- Use NPM 7+ to automatically install peer dependencies.
+- For older npm versions, manually install missing peer dependencies.
+
+### Problem: Module or Provider Injection Fails
+
+- Check that your providers, controllers, and modules are listed correctly in `App` or module definitions.
+- Make sure dependencies are registered before usage.
+- Confirm correct usage of constructor injection or parameter injection.
+
+## Validating Your Installation
+
+After setup, run a simple test to confirm installation success:
+
+```bash
+npm init @deepkit/app@latest my-deepkit-app
+cd my-deepkit-app
+npm run app
+```
+
+You should see the list of default commands.
+
+Try adding and running your own command:
+
+```typescript
+// app.ts
+import { App } from '@deepkit/app';
+
+const app = new App();
+
+app.command('hello', () => {
+  console.log('Hello Deepkit!');
+});
+
+app.run();
+```
+
+Then:
+
+```bash
+./node_modules/.bin/ts-node app.ts hello
+```
+
+Expected output:
+
+```
+Hello Deepkit!
+```
+
+## Best Practices and Tips
+
+- Prefer using `npm init @deepkit/app@latest` to scaffold new projects with recommended settings.
+- Always keep TypeScript, ts-node, and Deepkit packages updated.
+- Use the Deepkit Tracker or Logger to diagnose runtime issues.
+- Read error messages carefully; many relate directly to missing dependencies or misconfiguration.
+- Consult [Deepkit App documentation](./app.md) for detailed installation and application setup instructions.
+
+## Additional Troubleshooting Resources
+
+<AccordionGroup title="Common Setup Problems and Fixes">
+<Accordion title="Missing TypeScript Compiler or ts-node">
+
+If you see errors related to missing `tsc` or `ts-node`, run:
+
+```bash
+npm install --save-dev typescript ts-node
+```
+
+Ensure your PATH includes `node_modules/.bin` for local binaries.
+
+</Accordion>
+<Accordion title="Configuration Object Validation Errors">
+
+If you encounter errors about invalid configuration, check your config schema class and environment variables. Use type-safe configuration classes to avoid these problems.
+
+</Accordion>
+<Accordion title="Circular Dependency Errors">
+
+Verify your providers and modules do not depend on each other in circles. Restructure your module imports or use interfaces with explicit provision.
+
+</Accordion>
+<Accordion title="Port Conflict on Application Start">
+
+Another application might already listen on your configured port. Change port configuration or free the port.
+
+</Accordion>
+</AccordionGroup>
+
+## Summary
+
+Successful installation of Deepkit involves ensuring all dependencies are correctly installed, the project is configured with reflection enabled in TypeScript, and commands are properly registered. Using the official scaffolding helps avoid many pitfalls. If problems arise, following stepwise troubleshooting from dependency checks to configuration and runtime validations will resolve most issues.
+
+---
+
+## Related Documentation
+
+- [Deepkit App Overview](./app.md) — Core concepts and getting started with Deepkit CLI App
+- [Dependency Injection Basics](../dependency-injection/getting-started.md) — How DI works and how to register services
+- [Configuration Basics](../../getting-started/first-app-setup/configuration-basics.md) — Setting up your configuration schema and environment variables
+- [Troubleshooting Common Issues](../../getting-started/troubleshooting-next-steps/common-issues.md) — Broader troubleshooting beyond installation
+
+## External Links
+
+- [Deepkit npm package](https://www.npmjs.com/package/@deepkit/app)
+- [Deepkit GitHub Repository](https://github.com/deepkit/deepkit-framework)
+
+---
+
+For community support and questions, visit the official Deepkit forums or GitHub discussions.
+
+
