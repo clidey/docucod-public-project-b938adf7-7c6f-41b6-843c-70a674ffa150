@@ -3,4 +3,234 @@ title: "Creating Your First Deepkit App"
 description: "Learn how to scaffold, configure, and launch a new Deepkit Framework application from scratch using command-line tooling. Includes a walkthrough from project initialization to a running basic app, covering key files and commands."
 ---
 
-*This page will automatically be generated from the codebase*
+# Creating Your First Deepkit App
+
+Welcome to your journey of building a new Deepkit Framework application. This guide walks you through scaffolding, configuring, and launching a basic Deepkit app from scratch using command-line tools and code examples. By the end, you'll have a live CLI application ready to extend and build upon.
+
+---
+
+## Workflow Overview
+
+### What this guide helps you achieve
+This guide equips you to:
+- Initialize a new Deepkit project using command-line tooling.
+- Create the essential project files and folder structure manually.
+- Configure the TypeScript compiler and Deepkit runtime properly.
+- Define a simple CLI command.
+- Launch and run your Deepkit application.
+
+### Prerequisites
+Before following this guide, make sure you have:
+- Node.js installed (version 14 or higher recommended).
+- npm or yarn for dependency management.
+- Basic familiarity with TypeScript and running Node.js scripts.
+- A command-line terminal to execute shell commands.
+
+### Expected Outcome
+By completing this guide, you will have:
+- A new Deepkit app folder with proper configuration.
+- `tsconfig.json` configured for decorators and reflection.
+- A minimal `app.ts` file defining a workable CLI command.
+- The ability to run your app and verify the CLI outputs.
+
+### Time Estimate
+This guide should take approximately 15-30 minutes to complete.
+
+### Difficulty Level
+Beginner — no prior Deepkit knowledge required.
+
+---
+
+## Step-by-Step Instructions
+
+### 1. Create a new project directory
+
+Start by creating a folder for your application and navigate into it:
+
+```bash
+mkdir my-deepkit-app
+cd my-deepkit-app
+```
+
+### 2. Initialize npm and install dependencies
+
+Initialize an npm project to manage dependencies:
+
+```bash
+npm init -y
+```
+
+Then install Deepkit App, along with TypeScript and ts-node for development:
+
+```bash
+npm install @deepkit/app typescript ts-node @deepkit/type @deepkit/type-compiler
+```
+
+### 3. Setup Deepkit TypeScript compiler integration
+
+Deepkit requires its type compiler to enable reflection and decorators necessary for dependency injection and type validation.
+Run:
+
+```bash
+npx deepkit-type-install
+```
+
+This command enhances your installed TypeScript with Deepkit's reflection capabilities.
+
+### 4. Create a `tsconfig.json` configuration file
+
+Your app needs TypeScript configured to enable decorators and reflection metadata.
+Create a `tsconfig.json` file with this content:
+
+```json
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "es2020",
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "./dist"
+  },
+  "reflection": true,
+  "files": ["app.ts"]
+}
+```
+
+<Tip>
+The `reflection: true` key enables Deepkit's runtime type reflection, essential for dependency injection.
+</Tip>
+
+### 5. Create your main application file `app.ts`
+
+This file is the entry point of your CLI application. Create an `app.ts` file with the following code:
+
+```typescript
+import { App } from '@deepkit/app';
+import { Logger, ConsoleTransport } from '@deepkit/logger';
+
+// Create a new app instance
+const app = new App({
+  providers: [{ provide: Logger, useValue: new Logger([new ConsoleTransport()]) }]
+});
+
+// Define a simple CLI command named "test"
+app.command('test', (logger: Logger) => {
+  logger.log('Hello World!');
+});
+
+// Run the application
+app.run();
+```
+
+This example sets up a dependency-injected Logger and a `test` command that logs a greeting.
+
+### 6. Run your Deepkit application
+
+Start your app using `ts-node`:
+
+```bash
+npx ts-node app.ts
+```
+
+You will see the CLI help structure with the `test` command listed.
+
+To execute your command:
+
+```bash
+npx ts-node app.ts test
+```
+
+The console will output:
+
+```
+Hello World!
+```
+
+<Tip>
+Make the `app.ts` executable with a shebang and set execution permissions for an even smoother CLI experience.
+
+Add this as the first line of `app.ts`:
+```typescript
+#!/usr/bin/env ts-node-script
+```
+Then run:
+```bash
+chmod +x app.ts
+./app.ts test
+```
+</Tip>
+
+---
+
+## Understanding Key Files and Concepts
+
+### `tsconfig.json`
+Controls how TypeScript compiles your code.
+- `experimentalDecorators`: Enables using decorators, required for Deepkit's declarative CLI commands.
+- `reflection`: Activates Deepkit's runtime reflection, enabling dependency injection and command argument parsing.
+
+### `app.ts`
+Your app's main script:
+- Instantiates the `App` class from `@deepkit/app`.
+- Registers providers (e.g., Logger) that can be injected into commands.
+- Defines CLI commands using `app.command()` or controllers.
+- Calls `app.run()` to start command parsing and execution.
+
+### Providers and Dependency Injection
+Services like `Logger` are provided through the DI container and injected as parameters into your commands automatically.
+
+### CLI Commands
+Commands are functions or methods registered with a unique name. Parameters become CLI arguments or flags with automatic validation.
+
+---
+
+## Best Practices & Tips
+
+- **Use Dependency Injection Wisely**: Inject services like Logger or your own services directly into commands to keep code clean.
+- **Name Commands Clearly**: Use descriptive command names with namespaces if needed, e.g., `user:create`.
+- **Leverage Decorators or Functions**: Choose class controllers for complex commands or simple functions for quick scripts.
+- **Enable Strict Types**: Configure TypeScript with `strict` on to catch early errors.
+- **Use npm scripts**: Add convenient npm commands in `package.json` for running your app, e.g.,
+  ```json
+  "scripts": {
+    "app": "ts-node app.ts"
+  }
+  ```
+- **Structure Your App**: Keep your commands and services organized in subfolders as your app grows.
+
+---
+
+## Troubleshooting
+
+<AccordionGroup title="Common Startup Issues">
+<Accordion title="Command Not Found or No Commands Listed">
+Ensure you have called `app.run()` at the end of your `app.ts` script.
+Check that command registration methods like `app.command()` or controllers are properly imported and initialized.
+</Accordion>
+<Accordion title="TypeScript Decorators Not Working">
+Verify your `tsconfig.json` has `experimentalDecorators` enabled.
+Make sure Deepkit's type compiler is installed with `deepkit-type-install`.
+</Accordion>
+<Accordion title="Logger Output Not Showing">
+Confirm `Logger` provider is defined and injected correctly.
+Check console transport setup: `new Logger([new ConsoleTransport()])`.
+</Accordion>
+<Accordion title="Permission Denied Running app.ts as Executable">
+Use `chmod +x app.ts` to enable execution permission.
+Check the shebang line is the very first line of the file.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps & Related Content
+
+- **Adding More Commands**: Learn how to build complex CLI commands and controllers. See [CLI Controllers & Commands](../../api-reference/core-controllers/cli-controllers.md).
+- **Configuration Management**: Customize your app using environment variables and config classes. See [Configuration Basics](../../getting-started/first-app-setup/configuration-basics.md).
+- **Dependency Injection Deep Dive**: Master DI for better code structuring. Visit [Working with Dependency Injection](../../guides/core-workflows/dependency-injection-basics.md).
+- **Running Your App**: Explore detailed app startup and environment options. See [Starting and Running Your App](../../getting-started/running-and-validation/starting-the-app.md).
+- **Troubleshooting**: Address common installation or runtime errors. See [Troubleshooting Common Issues](../../getting-started/troubleshooting-next-steps/common-issues.md).
+
+With a solid foundation established, you can scale your Deepkit app with HTTP servers, RPC endpoints, and database integration. Welcome to the future of powerful, type-safe CLI and server applications!
