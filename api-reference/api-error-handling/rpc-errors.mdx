@@ -15,7 +15,6 @@ In Deepkit RPC, any error thrown inside an RPC action on the server is automatic
 
 This robust mechanism ensures that errors are not swallowed silently and can be handled appropriately on the client side — for example, providing meaningful feedback to users or triggering specific recovery workflows.
 
-<!-- Storytelling context -->
 Imagine you have a server API that fetches user profiles. If a user ID is invalid, your server throws an error. Deepkit RPC makes sure the client knows exactly what went wrong (not only that something failed), enabling precise error handling without manual glue code.
 
 ---
